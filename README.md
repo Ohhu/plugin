@@ -21,8 +21,7 @@ https://raw.githubusercontent.com/Ohhu/plugin/TuneHub/dist/Tunehub.js
 
 ```bash
 npm install
-npm run build              # 构建并混淆代码
-npm run build:no-obfuscate # 仅构建，不混淆
+npm run build
 ```
 
 ## 项目结构
