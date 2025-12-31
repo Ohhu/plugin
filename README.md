@@ -12,13 +12,19 @@ MusicFree 插件
 
 ## 使用
 
+下载地址：
+```
+https://raw.githubusercontent.com/Ohhu/plugin/TuneHub/dist/Tunehub.js
+```
+
 下载 `dist/Tunehub.js` 导入 MusicFree
 
 ## 构建
 
 ```bash
 npm install
-npm run build
+npm run build              # 构建并混淆代码
+npm run build:no-obfuscate # 仅构建，不混淆
 ```
 
 ## 项目结构
