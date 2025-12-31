@@ -15,3 +15,6 @@ export const QUALITY_MAP: Record<string, string> = {
   high: "flac",
   super: "flac24bit"
 };
+
+// 分页配置
+export const PAGE_SIZE = 30; // 每页显示数量

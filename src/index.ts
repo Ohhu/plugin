@@ -28,10 +28,12 @@ import {
 const pluginInstance: IPlugin.IPluginDefine = {
   platform: "TuneHub",
   author: "Ohhu",
-  version: "1.2.0",
+  version: "1.3.1",
+  defaultSearchType: "music",
+  supportedSearchType: ["music", "album", "artist"],
   cacheControl: "no-store",
   primaryKey: ["id", "source"],
-  srcUrl: "https://your-plugin-url/tunehub.js",
+  srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/TuneHub/dist/Tunehub.js",
 
   // API 原生支持的功能
   search,

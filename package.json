@@ -1,6 +1,6 @@
 {
   "name": "tunehub-musicfree-plugin",
-  "version": "1.2.0",
+  "version": "1.3.1",
   "description": "TuneHub API 插件 - MusicFree 聚合音乐搜索插件",
   "source": "src/index.ts",
   "main": "dist/Tunehub.js",

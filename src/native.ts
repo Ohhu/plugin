@@ -1,5 +1,14 @@
-import axios from 'axios';
-import { BASE_URL, PLATFORM_NAMES, QUALITY_MAP } from './constants';
+import { BASE_URL, PLATFORM_NAMES, QUALITY_MAP, PAGE_SIZE } from './constants';
+import { requestWithRetry, buildApiUrl, sortBySimilarity } from './utils';
+import {
+  ApiResponse,
+  AggregateSearchData,
+  MusicInfoData,
+  TopListsData,
+  TopListDetailData,
+  PlaylistData,
+  ArtistInfo
+} from './types';
 import { searchAlbum } from './simulated';
 
 /**
@@ -10,28 +19,31 @@ import { searchAlbum } from './simulated';
 // 搜索功能
 export const search: IPlugin.ISearchFunc = async function (query, page, type) {
   try {
-    const res = await axios.get(`${BASE_URL}/api/`, {
+    const data = await requestWithRetry<ApiResponse<AggregateSearchData>>({
+      method: 'GET',
+      url: `${BASE_URL}/api/`,
       params: {
         type: "aggregateSearch",
         keyword: query
       }
     });
 
-    if (res.data.code === 200) {
-      const results = res.data.data.results || [];
+    if (data.code === 200) {
+      const results = data.data.results || [];
 
       if (type === "music") {
-        // 返回歌曲列表
+        // 聚合搜索返回结果较少，直接返回所有结果
         return {
           isEnd: true,
-          data: results.map((item: any) => ({
+          data: results.map((item) => ({
             id: item.id,
+            platform: item.platform,
             source: item.platform,
             title: item.name,
             artist: item.artist,
             album: item.album || "",
-            artwork: `${BASE_URL}/api/?source=${item.platform}&id=${item.id}&type=pic`,
-            url: `${BASE_URL}/api/?source=${item.platform}&id=${item.id}&type=url&br=320k`,
+            artwork: buildApiUrl(BASE_URL, item.platform, item.id, 'pic'),
+            url: buildApiUrl(BASE_URL, item.platform, item.id, 'url', '320k'),
           }))
         };
       } else if (type === "album") {
@@ -39,70 +51,30 @@ export const search: IPlugin.ISearchFunc = async function (query, page, type) {
         return await searchAlbum(query, page) as any;
       } else if (type === "artist") {
         // 从歌曲结果中提取艺术家信息(去重)
-        const artistMap = new Map();
-        results.forEach((item: any) => {
+        const artistMap = new Map<string, ArtistInfo>();
+        results.forEach((item) => {
           if (item.artist && !artistMap.has(item.artist)) {
             artistMap.set(item.artist, {
               id: item.artist,
               source: item.platform,
               name: item.artist,
-              avatar: `${BASE_URL}/api/?source=${item.platform}&id=${item.id}&type=pic`,
-              _searchQuery: query.toLowerCase() // 保存搜索关键词用于排序
+              avatar: buildApiUrl(BASE_URL, item.platform, item.id, 'pic'),
             });
           }
         });
 
-        // 计算相似度并排序
-        const artistList = Array.from(artistMap.values()).map(artist => {
-          const name = artist.name.toLowerCase();
-          const searchQuery = query.toLowerCase();
+        // 使用工具函数排序
+        const artistList = sortBySimilarity(
+          Array.from(artistMap.values()),
+          query,
+          (artist) => artist.name,
+          true // 支持分词匹配
+        );
 
-          // 计算相似度分数
-          let score = 0;
-
-          // 1. 完全匹配 (最高优先级)
-          if (name === searchQuery) {
-            score = 1000;
-          }
-          // 2. 开头匹配
-          else if (name.startsWith(searchQuery)) {
-            score = 500;
-          }
-          // 3. 包含关键词
-          else if (name.includes(searchQuery)) {
-            // 关键词越靠前,分数越高
-            const position = name.indexOf(searchQuery);
-            score = 300 - position;
-          }
-          // 4. 分词匹配 (处理多个艺术家的情况,如 "周杰伦、李硕、张鑫")
-          else {
-            const artists = name.split(/[、,，]/).map(a => a.trim());
-            for (let i = 0; i < artists.length; i++) {
-              if (artists[i] === searchQuery) {
-                score = 800 - i * 100; // 第一个艺术家分数最高
-                break;
-              } else if (artists[i].startsWith(searchQuery)) {
-                score = 400 - i * 50;
-                break;
-              } else if (artists[i].includes(searchQuery)) {
-                score = 200 - i * 20;
-                break;
-              }
-            }
-          }
-
-          return { ...artist, _score: score };
-        });
-
-        // 按分数降序排序
-        artistList.sort((a, b) => b._score - a._score);
-
-        // 移除临时字段
-        const sortedData = artistList.map(({ _searchQuery, _score, ...artist }) => artist);
-
+        // 聚合搜索返回结果较少，直接返回所有结果
         return {
           isEnd: true,
-          data: sortedData
+          data: artistList
         };
       }
     }
@@ -120,7 +92,7 @@ export const getMediaSource = async function (
 ): Promise<IPlugin.IMediaSourceResult | null> {
   const platform = musicItem.source || "netease";
   const br = QUALITY_MAP[quality] || "320k";
-  const url = `${BASE_URL}/api/?source=${platform}&id=${musicItem.id}&type=url&br=${br}`;
+  const url = buildApiUrl(BASE_URL, platform, musicItem.id, 'url', br);
 
   // 直接返回 API URL，让 MusicFree 处理 302 重定向
   return { url };
@@ -133,7 +105,9 @@ export const getLyric = async function (
   const platform = musicItem.source || "netease";
 
   try {
-    const res = await axios.get(`${BASE_URL}/api/`, {
+    const data = await requestWithRetry<string>({
+      method: 'GET',
+      url: `${BASE_URL}/api/`,
       params: {
         source: platform,
         id: musicItem.id,
@@ -143,7 +117,7 @@ export const getLyric = async function (
     });
 
     return {
-      rawLrc: res.data
+      rawLrc: data
     };
   } catch (e) {
     return { rawLrc: "" };
@@ -157,7 +131,9 @@ export const getMusicInfo = async function (
   const platform = (musicBase as any).source || "netease";
 
   try {
-    const res = await axios.get(`${BASE_URL}/api/`, {
+    const response = await requestWithRetry<ApiResponse<MusicInfoData>>({
+      method: 'GET',
+      url: `${BASE_URL}/api/`,
       params: {
         source: platform,
         id: musicBase.id,
@@ -165,15 +141,15 @@ export const getMusicInfo = async function (
       }
     });
 
-    if (res.data.code === 200) {
-      const data = res.data.data;
+    if (response.code === 200) {
+      const data = response.data;
       return {
         id: musicBase.id,
         source: platform,
         title: data.name,
         artist: data.artist,
         album: data.album || "",
-        artwork: `${BASE_URL}/api/?source=${platform}&id=${musicBase.id}&type=pic`,
+        artwork: buildApiUrl(BASE_URL, platform, musicBase.id, 'pic'),
       };
     }
   } catch (e) {
@@ -185,23 +161,26 @@ export const getMusicInfo = async function (
 
 // 获取排行榜列表
 export const getTopLists = async function (): Promise<IMusic.IMusicSheetGroupItem[]> {
-  const platforms = ["netease", "kuwo", "qq"];
+  const platforms = ["qq", "netease", "kuwo"];
   const result: IMusic.IMusicSheetGroupItem[] = [];
 
   for (const platform of platforms) {
     try {
-      const res = await axios.get(`${BASE_URL}/api/`, {
+      const response = await requestWithRetry<ApiResponse<TopListsData>>({
+        method: 'GET',
+        url: `${BASE_URL}/api/`,
         params: {
           source: platform,
           type: "toplists"
         }
       });
 
-      if (res.data.code === 200 && res.data.data.list) {
+      if (response.code === 200 && response.data.list) {
         result.push({
           title: PLATFORM_NAMES[platform],
-          data: res.data.data.list.map((item: any) => ({
+          data: response.data.list.map((item) => ({
             id: item.id,
+            platform: platform,
             source: platform,
             title: item.name,
             description: item.updateFrequency || "",
@@ -223,7 +202,9 @@ export const getTopListDetail = async function (
   const platform = topListItem.source || "netease";
 
   try {
-    const res = await axios.get(`${BASE_URL}/api/`, {
+    const response = await requestWithRetry<ApiResponse<TopListDetailData>>({
+      method: 'GET',
+      url: `${BASE_URL}/api/`,
       params: {
         source: platform,
         id: topListItem.id,
@@ -231,18 +212,19 @@ export const getTopListDetail = async function (
       }
     });
 
-    if (res.data.code === 200) {
-      const list = res.data.data.list || [];
+    if (response.code === 200) {
+      const list = response.data.list || [];
       return {
         ...topListItem,
-        musicList: list.map((item: any) => ({
+        musicList: list.map((item) => ({
           id: item.id,
+          platform: platform,
           source: platform,
           title: item.name,
           artist: item.artist || "",
           album: item.album || "",
-          artwork: `${BASE_URL}/api/?source=${platform}&id=${item.id}&type=pic`,
-          url: `${BASE_URL}/api/?source=${platform}&id=${item.id}&type=url&br=320k`,
+          artwork: buildApiUrl(BASE_URL, platform, item.id, 'pic'),
+          url: buildApiUrl(BASE_URL, platform, item.id, 'url', '320k'),
         }))
       };
     }
@@ -277,7 +259,9 @@ export const importMusicSheet = async function (
       const playlistId = match[1];
 
       try {
-        const res = await axios.get(`${BASE_URL}/api/`, {
+        const response = await requestWithRetry<ApiResponse<PlaylistData>>({
+          method: 'GET',
+          url: `${BASE_URL}/api/`,
           params: {
             source: platform,
             id: playlistId,
@@ -285,16 +269,17 @@ export const importMusicSheet = async function (
           }
         });
 
-        if (res.data.code === 200 && res.data.data.list) {
+        if (response.code === 200 && response.data.list) {
           // 转换为 IMusicItem 格式
-          return res.data.data.list.map((item: any) => ({
+          return response.data.list.map((item) => ({
             id: item.id,
+            platform: platform,
             source: platform,
             title: item.name,
             artist: item.artist || "",
             album: item.album || "",
-            artwork: `${BASE_URL}/api/?source=${platform}&id=${item.id}&type=pic`,
-            url: `${BASE_URL}/api/?source=${platform}&id=${item.id}&type=url&br=320k`
+            artwork: buildApiUrl(BASE_URL, platform, item.id, 'pic'),
+            url: buildApiUrl(BASE_URL, platform, item.id, 'url', '320k')
           }));
         }
       } catch (e) {
