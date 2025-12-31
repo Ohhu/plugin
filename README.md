@@ -12,12 +12,10 @@ MusicFree 插件
 
 ## 使用
 
-下载地址：
+复制下面的链接，在 MusicFree 中导入插件：
 ```
 https://raw.githubusercontent.com/Ohhu/plugin/TuneHub/dist/Tunehub.js
 ```
-
-下载 `dist/Tunehub.js` 导入 MusicFree
 
 ## 构建
 
