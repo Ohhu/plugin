@@ -30,12 +30,13 @@ export const search: IPlugin.ISearchFunc = async function (query, page, type) {
 
       const data = await executeMethodConfig(config, {
         keyword: query,
-        page: String(page - 1), // 大多数平台从 0 开始
-        pageSize: String(PAGE_SIZE)
+        page: String(page),
+        limit: String(PAGE_SIZE)
       });
 
-      if (data && data.list && Array.isArray(data.list)) {
-        allResults.push(...data.list.map((item: any) => ({
+      // transform 函数直接返回数组，不是 {list: []}
+      if (data && Array.isArray(data)) {
+        allResults.push(...data.map((item: any) => ({
           ...item,
           platform,
           source: platform
@@ -171,15 +172,17 @@ export const getTopLists = async function (): Promise<IMusic.IMusicSheetGroupIte
 
       const data = await executeMethodConfig(config);
 
-      if (data && data.list && Array.isArray(data.list)) {
+      // transform 函数直接返回数组
+      if (data && Array.isArray(data)) {
         result.push({
           title: PLATFORM_NAMES[platform],
-          data: data.list.map((item: any) => ({
+          data: data.map((item: any) => ({
             id: item.id,
             platform: platform,
             source: platform,
             title: item.name || item.title,
-            description: item.updateFrequency || item.description || ""
+            description: item.updateFrequency || item.description || "",
+            coverImg: item.pic || ""
           }))
         });
       }
@@ -207,10 +210,11 @@ export const getTopListDetail = async function (
       id: String(topListItem.id)
     });
 
-    if (data && data.list && Array.isArray(data.list)) {
+    // transform 函数直接返回数组
+    if (data && Array.isArray(data)) {
       return {
         ...topListItem,
-        musicList: data.list.map((item: any) => ({
+        musicList: data.map((item: any) => ({
           id: item.id,
           platform: platform,
           source: platform,
@@ -260,6 +264,7 @@ export const importMusicSheet = async function (
           id: playlistId
         });
 
+        // transform 函数返回 {info: {...}, list: [...]}
         if (data && data.list && Array.isArray(data.list)) {
           // 转换为 IMusicItem 格式
           return data.list.map((item: any) => ({

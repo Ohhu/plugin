@@ -25,13 +25,14 @@ export const searchAlbum = async function (
 
       const data = await executeMethodConfig(config, {
         keyword: query,
-        page: String(page - 1),
-        pageSize: String(PAGE_SIZE)
+        page: String(page),
+        limit: String(PAGE_SIZE)
       });
 
-      if (data && data.list && Array.isArray(data.list)) {
+      // transform 函数直接返回数组
+      if (data && Array.isArray(data)) {
         // 从歌曲结果中提取专辑信息(去重)
-        data.list.forEach((item: any) => {
+        data.forEach((item: any) => {
           const albumName = item.album || "";
           if (albumName && !albumMap.has(albumName)) {
             albumMap.set(albumName, {
@@ -83,13 +84,14 @@ export const getAlbumInfo = async function (
 
     const data = await executeMethodConfig(config, {
       keyword: searchKeyword,
-      page: "0",
-      pageSize: "100"
+      page: "1",
+      limit: "100"
     });
 
-    if (data && data.list && Array.isArray(data.list)) {
+    // transform 函数直接返回数组
+    if (data && Array.isArray(data)) {
       // 过滤出匹配的歌曲
-      const musicList = data.list
+      const musicList = data
         .filter((item: any) => {
           const itemAlbum = item.album || "";
           const itemArtist = item.artist || "";
@@ -143,12 +145,13 @@ export const getArtistWorks: IPlugin.IGetArtistWorksFunc = async function <T ext
 
     const data = await executeMethodConfig(config, {
       keyword: artistName,
-      page: String(page - 1),
-      pageSize: "50"
+      page: String(page),
+      limit: "50"
     });
 
-    if (data && data.list && Array.isArray(data.list)) {
-      const results = data.list.filter((item: any) => {
+    // transform 函数直接返回数组
+    if (data && Array.isArray(data)) {
+      const results = data.filter((item: any) => {
         const itemArtist = item.artist || "";
         return itemArtist.includes(artistName);
       });

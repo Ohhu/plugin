@@ -161,11 +161,12 @@ const $99a82f6090a5251e$export$bb9c7f929676dbb6 = async function(query, page) {
         if (!config) continue;
         const data = await (0, $9ba0f9a5c47c04f2$export$6e82098e274baf8e)(config, {
             keyword: query,
-            page: String(page - 1),
-            pageSize: String((0, $af8d31735c159a26$export$8ec3d08588d2eeda))
+            page: String(page),
+            limit: String((0, $af8d31735c159a26$export$8ec3d08588d2eeda))
         });
-        if (data && data.list && Array.isArray(data.list)) // 从歌曲结果中提取专辑信息(去重)
-        data.list.forEach((item)=>{
+        // transform 函数直接返回数组
+        if (data && Array.isArray(data)) // 从歌曲结果中提取专辑信息(去重)
+        data.forEach((item)=>{
             const albumName = item.album || "";
             if (albumName && !albumMap.has(albumName)) albumMap.set(albumName, {
                 id: albumName,
@@ -200,12 +201,13 @@ const $99a82f6090a5251e$export$dc862406499065f2 = async function(albumItem, page
         };
         const data = await (0, $9ba0f9a5c47c04f2$export$6e82098e274baf8e)(config, {
             keyword: searchKeyword,
-            page: "0",
-            pageSize: "100"
+            page: "1",
+            limit: "100"
         });
-        if (data && data.list && Array.isArray(data.list)) {
+        // transform 函数直接返回数组
+        if (data && Array.isArray(data)) {
             // 过滤出匹配的歌曲
-            const musicList = data.list.filter((item)=>{
+            const musicList = data.filter((item)=>{
                 const itemAlbum = item.album || "";
                 const itemArtist = item.artist || "";
                 // 专辑名必须匹配
@@ -248,11 +250,12 @@ const $99a82f6090a5251e$export$4adb7587a1eda30e = async function(artistItem, pag
         };
         const data = await (0, $9ba0f9a5c47c04f2$export$6e82098e274baf8e)(config, {
             keyword: artistName,
-            page: String(page - 1),
-            pageSize: "50"
+            page: String(page),
+            limit: "50"
         });
-        if (data && data.list && Array.isArray(data.list)) {
-            const results = data.list.filter((item)=>{
+        // transform 函数直接返回数组
+        if (data && Array.isArray(data)) {
+            const results = data.filter((item)=>{
                 const itemArtist = item.artist || "";
                 return itemArtist.includes(artistName);
             });
@@ -317,10 +320,11 @@ const $a4fcabfd0bbb32c7$export$d76128d007d19019 = async function(query, page, ty
         if (!config) continue;
         const data = await (0, $9ba0f9a5c47c04f2$export$6e82098e274baf8e)(config, {
             keyword: query,
-            page: String(page - 1),
-            pageSize: String((0, $af8d31735c159a26$export$8ec3d08588d2eeda))
+            page: String(page),
+            limit: String((0, $af8d31735c159a26$export$8ec3d08588d2eeda))
         });
-        if (data && data.list && Array.isArray(data.list)) allResults.push(...data.list.map((item)=>({
+        // transform 函数直接返回数组，不是 {list: []}
+        if (data && Array.isArray(data)) allResults.push(...data.map((item)=>({
                 ...item,
                 platform: platform,
                 source: platform
@@ -427,14 +431,16 @@ const $a4fcabfd0bbb32c7$export$157a64c1e7dbc3b7 = async function() {
         const config = await (0, $9ba0f9a5c47c04f2$export$3c06a706316686c9)((0, $af8d31735c159a26$export$ca6dda5263526f75), platform, "toplists");
         if (!config) continue;
         const data = await (0, $9ba0f9a5c47c04f2$export$6e82098e274baf8e)(config);
-        if (data && data.list && Array.isArray(data.list)) result.push({
+        // transform 函数直接返回数组
+        if (data && Array.isArray(data)) result.push({
             title: (0, $af8d31735c159a26$export$ab2a2e5f034797)[platform],
-            data: data.list.map((item)=>({
+            data: data.map((item)=>({
                     id: item.id,
                     platform: platform,
                     source: platform,
                     title: item.name || item.title,
-                    description: item.updateFrequency || item.description || ""
+                    description: item.updateFrequency || item.description || "",
+                    coverImg: item.pic || ""
                 }))
         });
     } catch (e) {
@@ -453,9 +459,10 @@ const $a4fcabfd0bbb32c7$export$b0178d0d6466fe81 = async function(topListItem) {
         const data = await (0, $9ba0f9a5c47c04f2$export$6e82098e274baf8e)(config, {
             id: String(topListItem.id)
         });
-        if (data && data.list && Array.isArray(data.list)) return {
+        // transform 函数直接返回数组
+        if (data && Array.isArray(data)) return {
             ...topListItem,
-            musicList: data.list.map((item)=>({
+            musicList: data.map((item)=>({
                     id: item.id,
                     platform: platform,
                     source: platform,
@@ -504,6 +511,7 @@ const $a4fcabfd0bbb32c7$export$673794af62c4d65e = async function(urlLike) {
                 const data = await (0, $9ba0f9a5c47c04f2$export$6e82098e274baf8e)(config, {
                     id: playlistId
                 });
+                // transform 函数返回 {info: {...}, list: [...]}
                 if (data && data.list && Array.isArray(data.list)) // 转换为 IMusicItem 格式
                 return data.list.map((item)=>({
                         id: item.id,
@@ -531,7 +539,7 @@ const $a4fcabfd0bbb32c7$export$673794af62c4d65e = async function(urlLike) {
 const $882b6d93070905b3$var$pluginInstance = {
     platform: "TuneHub",
     author: "Ohhu",
-    version: "2.0.0",
+    version: "2.0.1",
     defaultSearchType: "music",
     supportedSearchType: [
         "music",
