@@ -247,7 +247,8 @@ export const importMusicSheet = async function (
     // 网易云音乐: https://music.163.com/#/playlist?id=946216567
     { platform: "netease", regex: /music\.163\.com.*[?&]id=(\d+)/ },
     // QQ音乐: https://i.y.qq.com/n2/m/share/details/taoge.html?id=9629884311
-    { platform: "qq", regex: /y\.qq\.com.*[?&]id=(\d+)/ }
+    // QQ音乐新版: https://y.qq.com/n/ryqq/playlist/9629884311
+    { platform: "qq", regex: /y\.qq\.com.*(?:playlist\/|[?&]id=)(\d+)/ }
   ];
 
   // 尝试匹配 URL

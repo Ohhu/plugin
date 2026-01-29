@@ -147,7 +147,7 @@ export async function getMethodConfig(
 }
 
 /**
- * 替换模板变量
+ * 替换模板变量（支持表达式求值）
  * @param template 模板字符串或对象
  * @param variables 变量映射
  */
@@ -156,11 +156,19 @@ export function replaceTemplateVariables(
   variables: Record<string, string | number>
 ): any {
   if (typeof template === 'string') {
-    let result = template;
-    for (const [key, value] of Object.entries(variables)) {
-      result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), String(value));
-    }
-    return result;
+    // 匹配 {{...}} 模板，支持表达式
+    return template.replace(/\{\{([^}]+)\}\}/g, (_, expr) => {
+      try {
+        // 创建变量上下文并求值表达式
+        const func = new Function(...Object.keys(variables), `return ${expr};`);
+        const result = func(...Object.values(variables));
+        return String(result);
+      } catch (e) {
+        // 如果求值失败，返回空字符串
+        console.error('Template expression error:', expr, e);
+        return '';
+      }
+    });
   } else if (typeof template === 'object' && template !== null) {
     const result: Record<string, any> = {};
     for (const [key, value] of Object.entries(template)) {
@@ -208,8 +216,9 @@ export async function executeMethodConfig<T = any>(
     // 如果有 transform 函数，执行转换
     if (config.transform) {
       try {
-        // 安全地执行 transform 函数
-        const transformFunc = new Function('response', config.transform);
+        // API 返回的是完整函数定义 "function(response) { ... }"
+        // 使用 eval 解析完整函数定义
+        const transformFunc = eval('(' + config.transform + ')');
         data = transformFunc(data);
       } catch (e) {
         console.error('Transform function error:', e);
