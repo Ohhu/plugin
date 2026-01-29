@@ -1,4 +1,6 @@
 import axios, { AxiosRequestConfig } from 'axios';
+import { API_KEY } from './constants';
+import { MethodConfig, MethodResponse } from './types';
 
 /**
  * 延迟函数
@@ -9,7 +11,7 @@ export const delay = (ms: number): Promise<void> => {
 };
 
 /**
- * 带重试的 HTTP 请求
+ * 带重试的 HTTP 请求 (自动添加 API Key)
  * @param config axios 请求配置
  * @param retryCount 重试次数，默认 3 次
  * @param retryDelay 重试延迟，默认 150ms
@@ -20,7 +22,16 @@ export async function requestWithRetry<T = any>(
   retryDelay: number = 150
 ): Promise<T> {
   try {
-    const response = await axios(config);
+    // 自动添加 API Key 到请求头
+    const headers = {
+      ...config.headers,
+      'X-API-Key': API_KEY
+    };
+
+    const response = await axios({
+      ...config,
+      headers
+    });
     return response.data;
   } catch (error: any) {
     // 如果还有重试次数，则重试
@@ -31,28 +42,6 @@ export async function requestWithRetry<T = any>(
     // 重试次数用尽，抛出错误
     throw error;
   }
-}
-
-/**
- * 构建 API URL
- * @param baseUrl 基础 URL
- * @param platform 平台
- * @param id 资源 ID
- * @param type 类型 (pic, url, lrc, info)
- * @param br 比特率（可选）
- */
-export function buildApiUrl(
-  baseUrl: string,
-  platform: string,
-  id: string | number,
-  type: 'pic' | 'url' | 'lrc' | 'info',
-  br?: string
-): string {
-  let url = `${baseUrl}/api/?source=${platform}&id=${id}&type=${type}`;
-  if (br) {
-    url += `&br=${br}`;
-  }
-  return url;
 }
 
 /**
@@ -127,4 +116,109 @@ export function sortBySimilarity<T>(
 
   // 返回排序后的项目
   return itemsWithScore.map(({ item }) => item);
+}
+
+// ========== 新版 API 工具函数 ==========
+
+/**
+ * 获取方法下发配置
+ * @param baseUrl API 基础地址
+ * @param platform 平台
+ * @param functionName 功能名称
+ */
+export async function getMethodConfig(
+  baseUrl: string,
+  platform: string,
+  functionName: string
+): Promise<MethodConfig | null> {
+  try {
+    const response = await requestWithRetry<MethodResponse>({
+      method: 'GET',
+      url: `${baseUrl}/v1/methods/${platform}/${functionName}`
+    });
+
+    if (response.code === 0) {
+      return response.data;
+    }
+  } catch (e) {
+    console.error(`Get method config error (${platform}/${functionName}):`, e);
+  }
+  return null;
+}
+
+/**
+ * 替换模板变量
+ * @param template 模板字符串或对象
+ * @param variables 变量映射
+ */
+export function replaceTemplateVariables(
+  template: string | Record<string, any>,
+  variables: Record<string, string | number>
+): any {
+  if (typeof template === 'string') {
+    let result = template;
+    for (const [key, value] of Object.entries(variables)) {
+      result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), String(value));
+    }
+    return result;
+  } else if (typeof template === 'object' && template !== null) {
+    const result: Record<string, any> = {};
+    for (const [key, value] of Object.entries(template)) {
+      result[key] = replaceTemplateVariables(value, variables);
+    }
+    return result;
+  }
+  return template;
+}
+
+/**
+ * 执行方法下发配置
+ * @param config 方法配置
+ * @param variables 模板变量
+ */
+export async function executeMethodConfig<T = any>(
+  config: MethodConfig,
+  variables: Record<string, string | number> = {}
+): Promise<T | null> {
+  try {
+    // 替换 URL 中的变量
+    const url = replaceTemplateVariables(config.url, variables);
+
+    // 替换 params 中的变量
+    const params = config.params
+      ? replaceTemplateVariables(config.params, variables)
+      : undefined;
+
+    // 替换 body 中的变量
+    const body = config.body
+      ? replaceTemplateVariables(config.body, variables)
+      : undefined;
+
+    // 发起请求 (不使用 requestWithRetry，因为这是请求上游平台，不需要 API Key)
+    const response = await axios({
+      method: config.method,
+      url,
+      params,
+      data: body,
+      headers: config.headers || {}
+    });
+
+    let data = response.data;
+
+    // 如果有 transform 函数，执行转换
+    if (config.transform) {
+      try {
+        // 安全地执行 transform 函数
+        const transformFunc = new Function('response', config.transform);
+        data = transformFunc(data);
+      } catch (e) {
+        console.error('Transform function error:', e);
+      }
+    }
+
+    return data;
+  } catch (e) {
+    console.error('Execute method config error:', e);
+    return null;
+  }
 }

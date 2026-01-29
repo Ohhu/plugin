@@ -1,5 +1,5 @@
 /**
- * TuneHub MusicFree 插件
+ * TuneHub MusicFree 插件 (V3 API)
  *
  * 功能分类:
  * - native.ts: API 原生支持的功能 (搜索、音源、歌词、排行榜、导入歌单)
@@ -12,7 +12,6 @@ import {
   search,
   getMediaSource,
   getLyric,
-  getMusicInfo,
   getTopLists,
   getTopListDetail,
   importMusicSheet
@@ -28,7 +27,7 @@ import {
 const pluginInstance: IPlugin.IPluginDefine = {
   platform: "TuneHub",
   author: "Ohhu",
-  version: "1.3.1",
+  version: "2.0.0",
   defaultSearchType: "music",
   supportedSearchType: ["music", "album", "artist"],
   cacheControl: "no-store",
@@ -38,7 +37,6 @@ const pluginInstance: IPlugin.IPluginDefine = {
   // API 原生支持的功能
   search,
   getMediaSource,
-  getMusicInfo,
   getLyric,
   getTopLists,
   getTopListDetail,

@@ -1,230 +1,224 @@
 import { BASE_URL, PLATFORM_NAMES, QUALITY_MAP, PAGE_SIZE } from './constants';
-import { requestWithRetry, buildApiUrl, sortBySimilarity } from './utils';
+import { requestWithRetry, sortBySimilarity, getMethodConfig, executeMethodConfig } from './utils';
 import {
   ApiResponse,
-  AggregateSearchData,
-  MusicInfoData,
-  TopListsData,
-  TopListDetailData,
-  PlaylistData,
-  ArtistInfo
+  ParseRequest,
+  ParseResponseData
 } from './types';
 import { searchAlbum } from './simulated';
 
 /**
- * API 原生支持的功能
- * 包括: 搜索、获取音源、获取歌词、获取音乐详情、排行榜、导入歌单
+ * API 原生支持的功能 (TuneHub V3)
+ * 包括: 搜索、获取音源、获取歌词、排行榜、导入歌单
  */
 
-// 搜索功能
+// 搜索功能 (使用方法下发)
 export const search: IPlugin.ISearchFunc = async function (query, page, type) {
-  try {
-    const data = await requestWithRetry<ApiResponse<AggregateSearchData>>({
-      method: 'GET',
-      url: `${BASE_URL}/api/`,
-      params: {
-        type: "aggregateSearch",
-        keyword: query
+  if (type === "album") {
+    // 调用模拟的专辑搜索功能
+    return await searchAlbum(query, page) as any;
+  }
+
+  // 对于 music 和 artist 类型，使用方法下发进行搜索
+  const platforms = ["netease", "qq", "kuwo"];
+  const allResults: any[] = [];
+
+  for (const platform of platforms) {
+    try {
+      const config = await getMethodConfig(BASE_URL, platform, 'search');
+      if (!config) continue;
+
+      const data = await executeMethodConfig(config, {
+        keyword: query,
+        page: String(page - 1), // 大多数平台从 0 开始
+        pageSize: String(PAGE_SIZE)
+      });
+
+      if (data && data.list && Array.isArray(data.list)) {
+        allResults.push(...data.list.map((item: any) => ({
+          ...item,
+          platform,
+          source: platform
+        })));
+      }
+    } catch (e) {
+      console.error(`Search error for ${platform}:`, e);
+    }
+  }
+
+  if (type === "music") {
+    return {
+      isEnd: true,
+      data: allResults.map((item) => ({
+        id: item.id,
+        platform: item.platform,
+        source: item.platform,
+        title: item.name || item.title,
+        artist: item.artist || "",
+        album: item.album || "",
+        artwork: item.pic || "",
+        url: "" // URL 将通过 getMediaSource 获取
+      }))
+    };
+  } else if (type === "artist") {
+    // 从歌曲结果中提取艺术家信息(去重)
+    const artistMap = new Map<string, any>();
+    allResults.forEach((item) => {
+      const artistName = item.artist || "";
+      if (artistName && !artistMap.has(artistName)) {
+        artistMap.set(artistName, {
+          id: artistName,
+          source: item.platform,
+          name: artistName,
+          avatar: item.pic || ""
+        });
       }
     });
 
-    if (data.code === 200) {
-      const results = data.data.results || [];
+    // 使用工具函数排序
+    const artistList = sortBySimilarity(
+      Array.from(artistMap.values()),
+      query,
+      (artist) => artist.name,
+      true // 支持分词匹配
+    );
 
-      if (type === "music") {
-        // 聚合搜索返回结果较少，直接返回所有结果
-        return {
-          isEnd: true,
-          data: results.map((item) => ({
-            id: item.id,
-            platform: item.platform,
-            source: item.platform,
-            title: item.name,
-            artist: item.artist,
-            album: item.album || "",
-            artwork: buildApiUrl(BASE_URL, item.platform, item.id, 'pic'),
-            url: buildApiUrl(BASE_URL, item.platform, item.id, 'url', '320k'),
-          }))
-        };
-      } else if (type === "album") {
-        // 调用模拟的专辑搜索功能
-        return await searchAlbum(query, page) as any;
-      } else if (type === "artist") {
-        // 从歌曲结果中提取艺术家信息(去重)
-        const artistMap = new Map<string, ArtistInfo>();
-        results.forEach((item) => {
-          if (item.artist && !artistMap.has(item.artist)) {
-            artistMap.set(item.artist, {
-              id: item.artist,
-              source: item.platform,
-              name: item.artist,
-              avatar: buildApiUrl(BASE_URL, item.platform, item.id, 'pic'),
-            });
-          }
-        });
-
-        // 使用工具函数排序
-        const artistList = sortBySimilarity(
-          Array.from(artistMap.values()),
-          query,
-          (artist) => artist.name,
-          true // 支持分词匹配
-        );
-
-        // 聚合搜索返回结果较少，直接返回所有结果
-        return {
-          isEnd: true,
-          data: artistList
-        };
-      }
-    }
-  } catch (e) {
-    console.error("Search error:", e);
+    return {
+      isEnd: true,
+      data: artistList
+    };
   }
 
   return { isEnd: true, data: [] };
 };
 
-// 获取播放链接
+// 获取播放链接 (使用 /v1/parse 接口)
 export const getMediaSource = async function (
   musicItem: IMusic.IMusicItemPartial,
   quality: IMusic.IQualityKey
 ): Promise<IPlugin.IMediaSourceResult | null> {
   const platform = musicItem.source || "netease";
-  const br = QUALITY_MAP[quality] || "320k";
-  const url = buildApiUrl(BASE_URL, platform, musicItem.id, 'url', br);
+  const qualityStr = QUALITY_MAP[quality] || "320k";
 
-  // 直接返回 API URL，让 MusicFree 处理 302 重定向
-  return { url };
+  try {
+    const response = await requestWithRetry<ApiResponse<ParseResponseData>>({
+      method: 'POST',
+      url: `${BASE_URL}/v1/parse`,
+      data: {
+        platform,
+        ids: String(musicItem.id),
+        quality: qualityStr
+      } as ParseRequest
+    });
+
+    if (response.code === 0 && response.data) {
+      const songData = response.data[String(musicItem.id)];
+      if (songData && songData.url) {
+        return {
+          url: songData.url,
+          quality
+        };
+      }
+    }
+  } catch (e) {
+    console.error("Get media source error:", e);
+  }
+
+  return null;
 };
 
-// 获取歌词
+// 获取歌词 (使用 /v1/parse 接口)
 export const getLyric = async function (
   musicItem: IMusic.IMusicItemPartial
 ): Promise<ILyric.ILyricSource | null> {
   const platform = musicItem.source || "netease";
 
   try {
-    const data = await requestWithRetry<string>({
-      method: 'GET',
-      url: `${BASE_URL}/api/`,
-      params: {
-        source: platform,
-        id: musicItem.id,
-        type: "lrc"
-      },
-      responseType: "text"
+    const response = await requestWithRetry<ApiResponse<ParseResponseData>>({
+      method: 'POST',
+      url: `${BASE_URL}/v1/parse`,
+      data: {
+        platform,
+        ids: String(musicItem.id),
+        quality: "128k" // 获取歌词时音质参数不重要，使用最低音质节省积分
+      } as ParseRequest
     });
 
-    return {
-      rawLrc: data
-    };
-  } catch (e) {
-    return { rawLrc: "" };
-  }
-};
-
-// 获取音乐详情（补充封面等信息）
-export const getMusicInfo = async function (
-  musicBase: IMedia.IMediaBase
-): Promise<Partial<IMusic.IMusicItem> | null> {
-  const platform = (musicBase as any).source || "netease";
-
-  try {
-    const response = await requestWithRetry<ApiResponse<MusicInfoData>>({
-      method: 'GET',
-      url: `${BASE_URL}/api/`,
-      params: {
-        source: platform,
-        id: musicBase.id,
-        type: "info"
+    if (response.code === 0 && response.data) {
+      const songData = response.data[String(musicItem.id)];
+      if (songData && songData.lrc) {
+        return {
+          rawLrc: songData.lrc
+        };
       }
-    });
-
-    if (response.code === 200) {
-      const data = response.data;
-      return {
-        id: musicBase.id,
-        source: platform,
-        title: data.name,
-        artist: data.artist,
-        album: data.album || "",
-        artwork: buildApiUrl(BASE_URL, platform, musicBase.id, 'pic'),
-      };
     }
   } catch (e) {
-    console.error("Get music info error:", e);
+    console.error("Get lyric error:", e);
   }
 
-  return null;
+  return { rawLrc: "" };
 };
 
-// 获取排行榜列表
+// 获取排行榜列表 (使用方法下发)
 export const getTopLists = async function (): Promise<IMusic.IMusicSheetGroupItem[]> {
-  const platforms = ["qq", "netease", "kuwo"];
+  const platforms = ["netease", "qq", "kuwo"];
   const result: IMusic.IMusicSheetGroupItem[] = [];
 
   for (const platform of platforms) {
     try {
-      const response = await requestWithRetry<ApiResponse<TopListsData>>({
-        method: 'GET',
-        url: `${BASE_URL}/api/`,
-        params: {
-          source: platform,
-          type: "toplists"
-        }
-      });
+      const config = await getMethodConfig(BASE_URL, platform, 'toplists');
+      if (!config) continue;
 
-      if (response.code === 200 && response.data.list) {
+      const data = await executeMethodConfig(config);
+
+      if (data && data.list && Array.isArray(data.list)) {
         result.push({
           title: PLATFORM_NAMES[platform],
-          data: response.data.list.map((item) => ({
+          data: data.list.map((item: any) => ({
             id: item.id,
             platform: platform,
             source: platform,
-            title: item.name,
-            description: item.updateFrequency || "",
+            title: item.name || item.title,
+            description: item.updateFrequency || item.description || ""
           }))
         });
       }
     } catch (e) {
-      // 忽略单个平台错误
+      console.error(`Get toplists error for ${platform}:`, e);
     }
   }
 
   return result;
 };
 
-// 获取排行榜详情
+// 获取排行榜详情 (使用方法下发)
 export const getTopListDetail = async function (
   topListItem: IMusic.IMusicSheetItem
 ): Promise<ICommon.WithMusicList<IMusic.IMusicSheetItem>> {
   const platform = topListItem.source || "netease";
 
   try {
-    const response = await requestWithRetry<ApiResponse<TopListDetailData>>({
-      method: 'GET',
-      url: `${BASE_URL}/api/`,
-      params: {
-        source: platform,
-        id: topListItem.id,
-        type: "toplist"
-      }
+    const config = await getMethodConfig(BASE_URL, platform, 'toplist');
+    if (!config) {
+      return { ...topListItem, musicList: [] };
+    }
+
+    const data = await executeMethodConfig(config, {
+      id: String(topListItem.id)
     });
 
-    if (response.code === 200) {
-      const list = response.data.list || [];
+    if (data && data.list && Array.isArray(data.list)) {
       return {
         ...topListItem,
-        musicList: list.map((item) => ({
+        musicList: data.list.map((item: any) => ({
           id: item.id,
           platform: platform,
           source: platform,
-          title: item.name,
+          title: item.name || item.title,
           artist: item.artist || "",
           album: item.album || "",
-          artwork: buildApiUrl(BASE_URL, platform, item.id, 'pic'),
-          url: buildApiUrl(BASE_URL, platform, item.id, 'url', '320k'),
+          artwork: item.pic || "",
+          url: "" // URL 将通过 getMediaSource 获取
         }))
       };
     }
@@ -238,7 +232,7 @@ export const getTopListDetail = async function (
   };
 };
 
-// 导入歌单
+// 导入歌单 (使用方法下发)
 export const importMusicSheet = async function (
   urlLike: string
 ): Promise<IMusic.IMusicItem[] | null> {
@@ -259,27 +253,24 @@ export const importMusicSheet = async function (
       const playlistId = match[1];
 
       try {
-        const response = await requestWithRetry<ApiResponse<PlaylistData>>({
-          method: 'GET',
-          url: `${BASE_URL}/api/`,
-          params: {
-            source: platform,
-            id: playlistId,
-            type: "playlist"
-          }
+        const config = await getMethodConfig(BASE_URL, platform, 'playlist');
+        if (!config) continue;
+
+        const data = await executeMethodConfig(config, {
+          id: playlistId
         });
 
-        if (response.code === 200 && response.data.list) {
+        if (data && data.list && Array.isArray(data.list)) {
           // 转换为 IMusicItem 格式
-          return response.data.list.map((item) => ({
+          return data.list.map((item: any) => ({
             id: item.id,
             platform: platform,
             source: platform,
-            title: item.name,
+            title: item.name || item.title,
             artist: item.artist || "",
             album: item.album || "",
-            artwork: buildApiUrl(BASE_URL, platform, item.id, 'pic'),
-            url: buildApiUrl(BASE_URL, platform, item.id, 'url', '320k')
+            artwork: item.pic || "",
+            url: "" // URL 将通过 getMediaSource 获取
           }));
         }
       } catch (e) {

@@ -1,6 +1,6 @@
 import { BASE_URL, PAGE_SIZE } from './constants';
-import { requestWithRetry, buildApiUrl, sortBySimilarity } from './utils';
-import { ApiResponse, AggregateSearchData, AlbumInfo } from './types';
+import { requestWithRetry, sortBySimilarity, getMethodConfig, executeMethodConfig } from './utils';
+import { ApiResponse, ParseRequest, ParseResponseData, AlbumInfo } from './types';
 
 /**
  * 模拟功能 (使用搜索 API 模拟)
@@ -15,52 +15,52 @@ export const searchAlbum = async function (
   query: string,
   page: number
 ): Promise<IPlugin.ISearchResult<'album'>> {
-  try {
-    const data = await requestWithRetry<ApiResponse<AggregateSearchData>>({
-      method: 'GET',
-      url: `${BASE_URL}/api/`,
-      params: {
-        type: "aggregateSearch",
-        keyword: query
-      }
-    });
+  const platforms = ["netease", "qq", "kuwo"];
+  const albumMap = new Map<string, AlbumInfo>();
 
-    if (data.code === 200) {
-      const results = data.data.results || [];
+  for (const platform of platforms) {
+    try {
+      const config = await getMethodConfig(BASE_URL, platform, 'search');
+      if (!config) continue;
 
-      // 从歌曲结果中提取专辑信息(去重)
-      const albumMap = new Map<string, AlbumInfo>();
-      results.forEach((item) => {
-        if (item.album && !albumMap.has(item.album)) {
-          albumMap.set(item.album, {
-            id: item.album, // 使用专辑名作为 ID
-            platform: item.platform,
-            source: item.platform,
-            title: item.album,
-            artist: item.artist,
-            artwork: buildApiUrl(BASE_URL, item.platform, item.id, 'pic'),
-          });
-        }
+      const data = await executeMethodConfig(config, {
+        keyword: query,
+        page: String(page - 1),
+        pageSize: String(PAGE_SIZE)
       });
 
-      // 使用工具函数排序
-      const albumList = sortBySimilarity(
-        Array.from(albumMap.values()),
-        query,
-        (album) => album.title
-      );
-
-      // 聚合搜索返回结果较少，直接返回所有结果
-      return {
-        isEnd: true,
-        data: albumList
-      };
+      if (data && data.list && Array.isArray(data.list)) {
+        // 从歌曲结果中提取专辑信息(去重)
+        data.list.forEach((item: any) => {
+          const albumName = item.album || "";
+          if (albumName && !albumMap.has(albumName)) {
+            albumMap.set(albumName, {
+              id: albumName, // 使用专辑名作为 ID
+              platform: platform,
+              source: platform,
+              title: albumName,
+              artist: item.artist || "",
+              artwork: item.pic || ""
+            });
+          }
+        });
+      }
+    } catch (e) {
+      console.error(`Search album error for ${platform}:`, e);
     }
-  } catch (e) {
-    console.error("Search album error:", e);
   }
 
-  return { isEnd: true, data: [] };
+  // 使用工具函数排序
+  const albumList = sortBySimilarity(
+    Array.from(albumMap.values()),
+    query,
+    (album) => album.title
+  );
+
+  return {
+    isEnd: true,
+    data: albumList
+  };
 };
 
 // 获取专辑详情
@@ -76,38 +76,38 @@ export const getAlbumInfo = async function (
     // 使用艺术家名 + 专辑名进行精确搜索
     const searchKeyword = artistName ? `${artistName} ${albumName}` : albumName;
 
-    const data = await requestWithRetry<ApiResponse<AggregateSearchData>>({
-      method: 'GET',
-      url: `${BASE_URL}/api/`,
-      params: {
-        source: platform,
-        type: "search",
-        keyword: searchKeyword,
-        limit: 100
-      }
+    const config = await getMethodConfig(BASE_URL, platform, 'search');
+    if (!config) {
+      return { isEnd: true, musicList: [] };
+    }
+
+    const data = await executeMethodConfig(config, {
+      keyword: searchKeyword,
+      page: "0",
+      pageSize: "100"
     });
 
-    if (data.code === 200) {
-      const results = data.data.results || [];
-
+    if (data && data.list && Array.isArray(data.list)) {
       // 过滤出匹配的歌曲
-      const musicList = results
-        .filter((item) => {
+      const musicList = data.list
+        .filter((item: any) => {
+          const itemAlbum = item.album || "";
+          const itemArtist = item.artist || "";
           // 专辑名必须匹配
-          const albumMatch = item.album && item.album.toLowerCase().includes(albumName.toLowerCase());
+          const albumMatch = itemAlbum.toLowerCase().includes(albumName.toLowerCase());
           // 如果有艺术家信息,艺术家名也要匹配
-          const artistMatch = !artistName || (item.artist && item.artist.toLowerCase().includes(artistName.toLowerCase()));
+          const artistMatch = !artistName || itemArtist.toLowerCase().includes(artistName.toLowerCase());
           return albumMatch && artistMatch;
         })
-        .map((item) => ({
+        .map((item: any) => ({
           id: item.id,
           platform: platform,
           source: platform,
-          title: item.name,
-          artist: item.artist,
-          album: item.album,
-          artwork: buildApiUrl(BASE_URL, platform, item.id, 'pic'),
-          url: buildApiUrl(BASE_URL, platform, item.id, 'url', '320k')
+          title: item.name || item.title,
+          artist: item.artist || "",
+          album: item.album || "",
+          artwork: item.pic || "",
+          url: "" // URL 将通过 getMediaSource 获取
         }));
 
       return {
@@ -136,34 +136,35 @@ export const getArtistWorks: IPlugin.IGetArtistWorksFunc = async function <T ext
 
   try {
     // 使用搜索 API 搜索艺术家名称
-    const data = await requestWithRetry<ApiResponse<AggregateSearchData>>({
-      method: 'GET',
-      url: `${BASE_URL}/api/`,
-      params: {
-        source: platform,
-        type: "search",
-        keyword: artistName,
-        limit: 50
-      }
+    const config = await getMethodConfig(BASE_URL, platform, 'search');
+    if (!config) {
+      return { isEnd: true, data: [] } as any;
+    }
+
+    const data = await executeMethodConfig(config, {
+      keyword: artistName,
+      page: String(page - 1),
+      pageSize: "50"
     });
 
-    if (data.code === 200) {
-      const results = data.data.results || [];
+    if (data && data.list && Array.isArray(data.list)) {
+      const results = data.list.filter((item: any) => {
+        const itemArtist = item.artist || "";
+        return itemArtist.includes(artistName);
+      });
 
       if (type === "music") {
         // 返回歌曲列表
-        const musicList = results
-          .filter((item) => item.artist && item.artist.includes(artistName))
-          .map((item) => ({
-            id: item.id,
-            platform: platform,
-            source: platform,
-            title: item.name,
-            artist: item.artist,
-            album: item.album,
-            artwork: buildApiUrl(BASE_URL, platform, item.id, 'pic'),
-            url: buildApiUrl(BASE_URL, platform, item.id, 'url', '320k')
-          }));
+        const musicList = results.map((item: any) => ({
+          id: item.id,
+          platform: platform,
+          source: platform,
+          title: item.name || item.title,
+          artist: item.artist || "",
+          album: item.album || "",
+          artwork: item.pic || "",
+          url: "" // URL 将通过 getMediaSource 获取
+        }));
 
         return {
           isEnd: true,
@@ -172,20 +173,19 @@ export const getArtistWorks: IPlugin.IGetArtistWorksFunc = async function <T ext
       } else if (type === "album") {
         // 返回专辑列表(去重)
         const albumMap = new Map<string, AlbumInfo>();
-        results
-          .filter((item) => item.artist && item.artist.includes(artistName))
-          .forEach((item) => {
-            if (item.album && !albumMap.has(item.album)) {
-              albumMap.set(item.album, {
-                id: item.album, // 使用专辑名称作为 ID
-                platform: platform,
-                source: platform,
-                title: item.album,
-                artist: item.artist,
-                artwork: buildApiUrl(BASE_URL, platform, item.id, 'pic')
-              });
-            }
-          });
+        results.forEach((item: any) => {
+          const albumName = item.album || "";
+          if (albumName && !albumMap.has(albumName)) {
+            albumMap.set(albumName, {
+              id: albumName, // 使用专辑名称作为 ID
+              platform: platform,
+              source: platform,
+              title: albumName,
+              artist: item.artist || "",
+              artwork: item.pic || ""
+            });
+          }
+        });
 
         return {
           isEnd: true,

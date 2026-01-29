@@ -1,5 +1,8 @@
-// API 基础 URL
-export const BASE_URL = "https://music-dl.sayqz.com";
+// API 基础 URL (TuneHub V3)
+export const BASE_URL = "https://tunehub.sayqz.com/api";
+
+// API Key
+export const API_KEY = "th_dfa1e5bfcc678aed18ee30657d5f260ff5a5be2fb15af6f3";
 
 // 平台名称映射
 export const PLATFORM_NAMES: Record<string, string> = {
