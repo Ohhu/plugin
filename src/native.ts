@@ -170,7 +170,7 @@ export const getLyric = async function (
 
 // 获取排行榜列表 (使用方法下发)
 export const getTopLists = async function (): Promise<IMusic.IMusicSheetGroupItem[]> {
-  const platforms = ["netease", "qq", "kuwo"];
+  const platforms = ["qq", "netease", "kuwo"];  // QQ音乐放最前面
   const result: IMusic.IMusicSheetGroupItem[] = [];
 
   for (const platform of platforms) {

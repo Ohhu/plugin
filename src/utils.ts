@@ -147,7 +147,7 @@ export async function getMethodConfig(
 }
 
 /**
- * 替换模板变量（支持表达式求值）
+ * 替换模板变量（支持表达式求值，保留原始类型）
  * @param template 模板字符串或对象
  * @param variables 变量映射
  */
@@ -156,15 +156,26 @@ export function replaceTemplateVariables(
   variables: Record<string, string | number>
 ): any {
   if (typeof template === 'string') {
-    // 匹配 {{...}} 模板，支持表达式
+    // 检查是否整个字符串就是一个模板表达式 (如 "{{parseInt(id)}}")
+    const fullMatch = template.match(/^\{\{([^}]+)\}\}$/);
+    if (fullMatch) {
+      // 整个字符串是单个表达式，保留原始类型
+      try {
+        const func = new Function(...Object.keys(variables), `return ${fullMatch[1]};`);
+        return func(...Object.values(variables));
+      } catch (e) {
+        console.error('Template expression error:', fullMatch[1], e);
+        return '';
+      }
+    }
+
+    // 部分替换，结果为字符串
     return template.replace(/\{\{([^}]+)\}\}/g, (_, expr) => {
       try {
-        // 创建变量上下文并求值表达式
         const func = new Function(...Object.keys(variables), `return ${expr};`);
         const result = func(...Object.values(variables));
         return String(result);
       } catch (e) {
-        // 如果求值失败，返回空字符串
         console.error('Template expression error:', expr, e);
         return '';
       }

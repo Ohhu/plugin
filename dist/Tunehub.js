@@ -126,20 +126,29 @@ async function getMethodConfig(baseUrl11, platform11, functionName11) {
     return null;
 }
 function replaceTemplateVariables(template11, variables11) {
-    if (typeof template11 === "string") // 匹配 {{...}} 模板，支持表达式
-    return template11.replace(/\{\{([^}]+)\}\}/g, (_11, expr11)=>{
+    if (typeof template11 === "string") {
+        // 检查是否整个字符串就是一个模板表达式 (如 "{{parseInt(id)}}")
+        const fullMatch11 = template11.match(/^\{\{([^}]+)\}\}$/);
+        if (fullMatch11) // 整个字符串是单个表达式，保留原始类型
         try {
-            // 创建变量上下文并求值表达式
-            const func11 = new Function(...Object.keys(variables11), `return ${expr11};`);
-            const result11 = func11(...Object.values(variables11));
-            return String(result11);
+            const func11 = new Function(...Object.keys(variables11), `return ${fullMatch11[1]};`);
+            return func11(...Object.values(variables11));
         } catch (e11) {
-            // 如果求值失败，返回空字符串
-            console.error("Template expression error:", expr11, e11);
+            console.error("Template expression error:", fullMatch11[1], e11);
             return "";
         }
-    });
-    else if (typeof template11 === "object" && template11 !== null) {
+        // 部分替换，结果为字符串
+        return template11.replace(/\{\{([^}]+)\}\}/g, (_11, expr11)=>{
+            try {
+                const func11 = new Function(...Object.keys(variables11), `return ${expr11};`);
+                const result11 = func11(...Object.values(variables11));
+                return String(result11);
+            } catch (e11) {
+                console.error("Template expression error:", expr11, e11);
+                return "";
+            }
+        });
+    } else if (typeof template11 === "object" && template11 !== null) {
         const result11 = {};
         for (const [key11, value11] of Object.entries(template11))result11[key11] = replaceTemplateVariables(value11, variables11);
         return result11;
@@ -503,10 +512,10 @@ const $a4fcabfd0bbb32c7$export$dd8877a67b94ca98 = async function(musicItem) {
 };
 const $a4fcabfd0bbb32c7$export$157a64c1e7dbc3b7 = async function() {
     const platforms = [
-        "netease",
         "qq",
+        "netease",
         "kuwo"
-    ];
+    ]; // QQ音乐放最前面
     const result = [];
     for (const platform of platforms)try {
         const config = await (0, $lCxOT.getMethodConfig)((0, $cyXty.BASE_URL), platform, "toplists");
@@ -621,7 +630,7 @@ const $a4fcabfd0bbb32c7$export$673794af62c4d65e = async function(urlLike) {
 const $882b6d93070905b3$var$pluginInstance = {
     platform: "TuneHub",
     author: "Ohhu",
-    version: "2.1.2",
+    version: "2.1.3",
     defaultSearchType: "music",
     supportedSearchType: [
         "music",
