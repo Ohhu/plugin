@@ -1,5 +1,5 @@
 import { BASE_URL, PLATFORM_NAMES, QUALITY_MAP, PAGE_SIZE } from './constants';
-import { requestWithRetry, sortBySimilarity, getMethodConfig, executeMethodConfig } from './utils';
+import { requestWithRetry, sortBySimilarity, getMethodConfig, executeMethodConfig, executeMethodConfigRaw } from './utils';
 import {
   ApiResponse,
   ParseRequest,
@@ -219,7 +219,7 @@ export const getTopListDetail = async function (
     });
 
     // transform 函数直接返回数组
-    if (data && Array.isArray(data)) {
+    if (data && Array.isArray(data) && data.length > 0) {
       return {
         ...topListItem,
         musicList: data.map((item: any) => ({
@@ -233,6 +233,30 @@ export const getTopListDetail = async function (
           url: "" // URL 将通过 getMediaSource 获取
         }))
       };
+    }
+
+    // 后备处理：如果 transform 返回空数组，尝试直接解析原始数据
+    // 这是为了兼容 API 端 transform 函数与上游数据结构不匹配的情况
+    if (platform === 'qq') {
+      const rawData = await executeMethodConfigRaw(config, {
+        id: String(topListItem.id)
+      });
+      const songList = rawData?.toplist?.data?.songInfoList;
+      if (songList && Array.isArray(songList) && songList.length > 0) {
+        return {
+          ...topListItem,
+          musicList: songList.map((item: any) => ({
+            id: item.mid || item.id,
+            platform: platform,
+            source: platform,
+            title: item.title || item.name,
+            artist: item.singer?.map((s: any) => s.name).join(', ') || "",
+            album: item.album?.name || item.albumName || "",
+            artwork: item.album?.mid ? `https://y.qq.com/music/photo_new/T002R300x300M000${item.album.mid}.jpg` : "",
+            url: ""
+          }))
+        };
+      }
     }
   } catch (e) {
     console.error("Get top list detail error:", e);

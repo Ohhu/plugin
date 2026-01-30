@@ -50,6 +50,7 @@ $parcel$export(module.exports, "requestWithRetry", () => requestWithRetry);
 $parcel$export(module.exports, "sortBySimilarity", () => sortBySimilarity);
 $parcel$export(module.exports, "getMethodConfig", () => getMethodConfig);
 $parcel$export(module.exports, "executeMethodConfig", () => executeMethodConfig);
+$parcel$export(module.exports, "executeMethodConfigRaw", () => executeMethodConfigRaw);
 
 
 var $cyXty = parcelRequire("cyXty");
@@ -169,7 +170,9 @@ async function executeMethodConfig(config, variables = {}) {
             url: url,
             params: params,
             data: body,
-            headers: config.headers || {}
+            headers: config.headers || {},
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity
         });
         let data = response.data;
         // 如果有 transform 函数，执行转换
@@ -184,6 +187,30 @@ async function executeMethodConfig(config, variables = {}) {
         return data;
     } catch (e) {
         console.error("Execute method config error:", e);
+        return null;
+    }
+}
+async function executeMethodConfigRaw(config11, variables11 = {}) {
+    try {
+        // 替换 URL 中的变量
+        const url11 = replaceTemplateVariables(config11.url, variables11);
+        // 替换 params 中的变量
+        const params11 = config11.params ? replaceTemplateVariables(config11.params, variables11) : undefined;
+        // 替换 body 中的变量
+        const body11 = config11.body ? replaceTemplateVariables(config11.body, variables11) : undefined;
+        // 发起请求
+        const response11 = await (0, ($parcel$interopDefault($8zHUo$axios)))({
+            method: config11.method,
+            url: url11,
+            params: params11,
+            data: body11,
+            headers: config11.headers || {},
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity
+        });
+        return response11.data;
+    } catch (e11) {
+        console.error("Execute method config raw error:", e11);
         return null;
     }
 }
@@ -550,7 +577,7 @@ const $a4fcabfd0bbb32c7$export$b0178d0d6466fe81 = async function(topListItem) {
             id: String(topListItem.id)
         });
         // transform 函数直接返回数组
-        if (data && Array.isArray(data)) return {
+        if (data && Array.isArray(data) && data.length > 0) return {
             ...topListItem,
             musicList: data.map((item)=>({
                     id: item.id,
@@ -563,6 +590,27 @@ const $a4fcabfd0bbb32c7$export$b0178d0d6466fe81 = async function(topListItem) {
                     url: "" // URL 将通过 getMediaSource 获取
                 }))
         };
+        // 后备处理：如果 transform 返回空数组，尝试直接解析原始数据
+        // 这是为了兼容 API 端 transform 函数与上游数据结构不匹配的情况
+        if (platform === "qq") {
+            const rawData = await (0, $lCxOT.executeMethodConfigRaw)(config, {
+                id: String(topListItem.id)
+            });
+            const songList = rawData?.toplist?.data?.songInfoList;
+            if (songList && Array.isArray(songList) && songList.length > 0) return {
+                ...topListItem,
+                musicList: songList.map((item)=>({
+                        id: item.mid || item.id,
+                        platform: platform,
+                        source: platform,
+                        title: item.title || item.name,
+                        artist: item.singer?.map((s)=>s.name).join(", ") || "",
+                        album: item.album?.name || item.albumName || "",
+                        artwork: item.album?.mid ? `https://y.qq.com/music/photo_new/T002R300x300M000${item.album.mid}.jpg` : "",
+                        url: ""
+                    }))
+            };
+        }
     } catch (e) {
         console.error("Get top list detail error:", e);
     }
@@ -630,7 +678,7 @@ const $a4fcabfd0bbb32c7$export$673794af62c4d65e = async function(urlLike) {
 const $882b6d93070905b3$var$pluginInstance = {
     platform: "TuneHub",
     author: "Ohhu",
-    version: "2.1.3",
+    version: "2.1.4",
     defaultSearchType: "music",
     supportedSearchType: [
         "music",

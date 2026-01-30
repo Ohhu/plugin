@@ -219,7 +219,9 @@ export async function executeMethodConfig<T = any>(
       url,
       params,
       data: body,
-      headers: config.headers || {}
+      headers: config.headers || {},
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity
     });
 
     let data = response.data;
@@ -239,6 +241,47 @@ export async function executeMethodConfig<T = any>(
     return data;
   } catch (e) {
     console.error('Execute method config error:', e);
+    return null;
+  }
+}
+
+/**
+ * 执行方法下发配置（不应用 transform，返回原始数据）
+ * @param config 方法配置
+ * @param variables 模板变量
+ */
+export async function executeMethodConfigRaw<T = any>(
+  config: MethodConfig,
+  variables: Record<string, string | number> = {}
+): Promise<T | null> {
+  try {
+    // 替换 URL 中的变量
+    const url = replaceTemplateVariables(config.url, variables);
+
+    // 替换 params 中的变量
+    const params = config.params
+      ? replaceTemplateVariables(config.params, variables)
+      : undefined;
+
+    // 替换 body 中的变量
+    const body = config.body
+      ? replaceTemplateVariables(config.body, variables)
+      : undefined;
+
+    // 发起请求
+    const response = await axios({
+      method: config.method,
+      url,
+      params,
+      data: body,
+      headers: config.headers || {},
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity
+    });
+
+    return response.data;
+  } catch (e) {
+    console.error('Execute method config raw error:', e);
     return null;
   }
 }
