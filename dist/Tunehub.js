@@ -457,11 +457,15 @@ const $a4fcabfd0bbb32c7$export$a92854129bc50f89 = async function(musicItem, qual
             }
         });
         if (response.code === 0 && response.data) {
-            const songData = response.data[String(musicItem.id)];
-            if (songData && songData.url) return {
-                url: songData.url,
-                quality: quality
-            };
+            // API 返回 data.data 是数组，需要从中查找对应 ID 的歌曲
+            const dataArray = response.data.data;
+            if (Array.isArray(dataArray)) {
+                const songData = dataArray.find((item)=>String(item.id) === String(musicItem.id));
+                if (songData && songData.url) return {
+                    url: songData.url,
+                    quality: quality
+                };
+            }
         }
     } catch (e) {
         console.error("Get media source error:", e);
@@ -481,10 +485,14 @@ const $a4fcabfd0bbb32c7$export$dd8877a67b94ca98 = async function(musicItem) {
             }
         });
         if (response.code === 0 && response.data) {
-            const songData = response.data[String(musicItem.id)];
-            if (songData && songData.lrc) return {
-                rawLrc: songData.lrc
-            };
+            // API 返回 data.data 是数组，需要从中查找对应 ID 的歌曲
+            const dataArray = response.data.data;
+            if (Array.isArray(dataArray)) {
+                const songData = dataArray.find((item)=>String(item.id) === String(musicItem.id));
+                if (songData && songData.lyrics) return {
+                    rawLrc: songData.lyrics
+                };
+            }
         }
     } catch (e) {
         console.error("Get lyric error:", e);
@@ -613,7 +621,7 @@ const $a4fcabfd0bbb32c7$export$673794af62c4d65e = async function(urlLike) {
 const $882b6d93070905b3$var$pluginInstance = {
     platform: "TuneHub",
     author: "Ohhu",
-    version: "2.1.1",
+    version: "2.1.2",
     defaultSearchType: "music",
     supportedSearchType: [
         "music",

@@ -113,12 +113,16 @@ export const getMediaSource = async function (
     });
 
     if (response.code === 0 && response.data) {
-      const songData = response.data[String(musicItem.id)];
-      if (songData && songData.url) {
-        return {
-          url: songData.url,
-          quality
-        };
+      // API 返回 data.data 是数组，需要从中查找对应 ID 的歌曲
+      const dataArray = (response.data as any).data;
+      if (Array.isArray(dataArray)) {
+        const songData = dataArray.find((item: any) => String(item.id) === String(musicItem.id));
+        if (songData && songData.url) {
+          return {
+            url: songData.url,
+            quality
+          };
+        }
       }
     }
   } catch (e) {
@@ -146,11 +150,15 @@ export const getLyric = async function (
     });
 
     if (response.code === 0 && response.data) {
-      const songData = response.data[String(musicItem.id)];
-      if (songData && songData.lrc) {
-        return {
-          rawLrc: songData.lrc
-        };
+      // API 返回 data.data 是数组，需要从中查找对应 ID 的歌曲
+      const dataArray = (response.data as any).data;
+      if (Array.isArray(dataArray)) {
+        const songData = dataArray.find((item: any) => String(item.id) === String(musicItem.id));
+        if (songData && songData.lyrics) {
+          return {
+            rawLrc: songData.lyrics
+          };
+        }
       }
     }
   } catch (e) {
