@@ -573,25 +573,8 @@ const $a4fcabfd0bbb32c7$export$b0178d0d6466fe81 = async function(topListItem) {
             ...topListItem,
             musicList: []
         };
-        const data = await (0, $lCxOT.executeMethodConfig)(config, {
-            id: String(topListItem.id)
-        });
-        // transform 函数直接返回数组
-        if (data && Array.isArray(data) && data.length > 0) return {
-            ...topListItem,
-            musicList: data.map((item)=>({
-                    id: item.id,
-                    platform: platform,
-                    source: platform,
-                    title: item.name || item.title,
-                    artist: item.artist || "",
-                    album: item.album || "",
-                    artwork: item.pic || "",
-                    url: "" // URL 将通过 getMediaSource 获取
-                }))
-        };
-        // 后备处理：如果 transform 返回空数组，尝试直接解析原始数据
-        // 这是为了兼容 API 端 transform 函数与上游数据结构不匹配的情况
+        // QQ 音乐需要特殊处理：API 的 transform 函数与上游数据结构不匹配
+        // 直接使用原始数据解析，跳过 transform
         if (platform === "qq") {
             const rawData = await (0, $lCxOT.executeMethodConfigRaw)(config, {
                 id: String(topListItem.id)
@@ -611,6 +594,24 @@ const $a4fcabfd0bbb32c7$export$b0178d0d6466fe81 = async function(topListItem) {
                     }))
             };
         }
+        // 其他平台使用标准的 transform 处理
+        const data = await (0, $lCxOT.executeMethodConfig)(config, {
+            id: String(topListItem.id)
+        });
+        // transform 函数直接返回数组
+        if (data && Array.isArray(data) && data.length > 0) return {
+            ...topListItem,
+            musicList: data.map((item)=>({
+                    id: item.id,
+                    platform: platform,
+                    source: platform,
+                    title: item.name || item.title,
+                    artist: item.artist || "",
+                    album: item.album || "",
+                    artwork: item.pic || "",
+                    url: "" // URL 将通过 getMediaSource 获取
+                }))
+        };
     } catch (e) {
         console.error("Get top list detail error:", e);
     }
@@ -678,7 +679,7 @@ const $a4fcabfd0bbb32c7$export$673794af62c4d65e = async function(urlLike) {
 const $882b6d93070905b3$var$pluginInstance = {
     platform: "TuneHub",
     author: "Ohhu",
-    version: "2.1.4",
+    version: "2.1.5",
     defaultSearchType: "music",
     supportedSearchType: [
         "music",
