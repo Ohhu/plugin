@@ -27,6 +27,7 @@ Thumbs.db
 # 临时文件
 *.tmp
 *.temp
+test.js
 
 # 备份
 .git.backup
