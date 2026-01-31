@@ -294,6 +294,63 @@ export const importMusicSheet = async function (
         const config = await getMethodConfig(BASE_URL, platform, 'playlist');
         if (!config) continue;
 
+        // QQ 音乐需要特殊处理：API 的 transform 函数与上游数据结构不匹配
+        // 直接使用原始数据解析，跳过 transform
+        if (platform === 'qq') {
+          const rawData = await executeMethodConfigRaw(config, {
+            id: playlistId
+          });
+          // QQ 音乐歌单数据结构: cdlist[0].songlist
+          const cdlist = rawData?.cdlist;
+          if (cdlist && cdlist.length > 0 && cdlist[0].songlist) {
+            const songList = cdlist[0].songlist;
+            return songList.map((item: any) => ({
+              id: item.mid || item.id,
+              platform: platform,
+              source: platform,
+              title: item.title || item.name,
+              artist: item.singer?.map((s: any) => s.name).join(', ') || "",
+              album: item.album?.name || item.albumName || "",
+              artwork: item.album?.mid ? `https://y.qq.com/music/photo_new/T002R300x300M000${item.album.mid}.jpg` : "",
+              url: ""
+            }));
+          }
+        }
+
+        // 其他平台使用标准的 transform 处理，但需要补充封面图片
+        const rawData = await executeMethodConfigRaw(config, {
+          id: playlistId
+        });
+
+        // 网易云音乐: result.tracks
+        if (platform === 'netease' && rawData?.result?.tracks) {
+          return rawData.result.tracks.map((item: any) => ({
+            id: item.id,
+            platform: platform,
+            source: platform,
+            title: item.name,
+            artist: item.ar?.map((a: any) => a.name).join(', ') || item.artists?.map((a: any) => a.name).join(', ') || "",
+            album: item.al?.name || item.album?.name || "",
+            artwork: item.al?.picUrl || item.album?.picUrl || "",
+            url: ""
+          }));
+        }
+
+        // 酷我音乐: musiclist
+        if (platform === 'kuwo' && rawData?.musiclist) {
+          return rawData.musiclist.map((item: any) => ({
+            id: item.id,
+            platform: platform,
+            source: platform,
+            title: item.name,
+            artist: item.artist || "",
+            album: item.album || "",
+            artwork: item.albumpic || item.pic || "",
+            url: ""
+          }));
+        }
+
+        // 如果原始数据解析失败，尝试使用 transform
         const data = await executeMethodConfig(config, {
           id: playlistId
         });
