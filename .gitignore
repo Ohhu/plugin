@@ -28,6 +28,7 @@ Thumbs.db
 *.tmp
 *.temp
 test.js
+dist/*.map
 
 # 备份
 .git.backup
