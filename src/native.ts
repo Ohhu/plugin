@@ -12,6 +12,10 @@ import { searchAlbum } from './simulated';
  * 包括: 搜索、获取音源、获取歌词、排行榜、导入歌单
  */
 
+// 歌词缓存 (避免重复调用 API)
+const lyricCache = new Map<string, string>();
+const MAX_CACHE_SIZE = 50;
+
 // 搜索功能 (使用方法下发)
 export const search: IPlugin.ISearchFunc = async function (query, page, type) {
   if (type === "album") {
@@ -100,6 +104,7 @@ export const getMediaSource = async function (
 ): Promise<IPlugin.IMediaSourceResult | null> {
   const platform = musicItem.source || "netease";
   const qualityStr = QUALITY_MAP[quality] || "320k";
+  const cacheKey = `${platform}_${musicItem.id}`;
 
   try {
     const response = await requestWithRetry<ApiResponse<ParseResponseData>>({
@@ -117,11 +122,20 @@ export const getMediaSource = async function (
       const dataArray = (response.data as any).data;
       if (Array.isArray(dataArray)) {
         const songData = dataArray.find((item: any) => String(item.id) === String(musicItem.id));
-        if (songData && songData.url) {
-          return {
-            url: songData.url,
-            quality
-          };
+        if (songData) {
+          // 缓存歌词
+          if (lyricCache.size >= MAX_CACHE_SIZE) {
+            const firstKey = lyricCache.keys().next().value;
+            if (firstKey) lyricCache.delete(firstKey);
+          }
+          lyricCache.set(cacheKey, songData.lyrics || "");
+
+          if (songData.url) {
+            return {
+              url: songData.url,
+              quality
+            };
+          }
         }
       }
     }
@@ -132,12 +146,19 @@ export const getMediaSource = async function (
   return null;
 };
 
-// 获取歌词 (使用 /v1/parse 接口)
+// 获取歌词 (优先从缓存读取)
 export const getLyric = async function (
   musicItem: IMusic.IMusicItemPartial
 ): Promise<ILyric.ILyricSource | null> {
   const platform = musicItem.source || "netease";
+  const cacheKey = `${platform}_${musicItem.id}`;
 
+  // 优先从缓存读取
+  if (lyricCache.has(cacheKey)) {
+    return { rawLrc: lyricCache.get(cacheKey)! };
+  }
+
+  // 缓存没有则请求 API
   try {
     const response = await requestWithRetry<ApiResponse<ParseResponseData>>({
       method: 'POST',
@@ -145,19 +166,22 @@ export const getLyric = async function (
       data: {
         platform,
         ids: String(musicItem.id),
-        quality: "128k" // 获取歌词时音质参数不重要，使用最低音质节省积分
+        quality: "128k"
       } as ParseRequest
     });
 
     if (response.code === 0 && response.data) {
-      // API 返回 data.data 是数组，需要从中查找对应 ID 的歌曲
       const dataArray = (response.data as any).data;
       if (Array.isArray(dataArray)) {
         const songData = dataArray.find((item: any) => String(item.id) === String(musicItem.id));
         if (songData && songData.lyrics) {
-          return {
-            rawLrc: songData.lyrics
-          };
+          // 存入缓存
+          if (lyricCache.size >= MAX_CACHE_SIZE) {
+            const firstKey = lyricCache.keys().next().value;
+            if (firstKey) lyricCache.delete(firstKey);
+          }
+          lyricCache.set(cacheKey, songData.lyrics);
+          return { rawLrc: songData.lyrics };
         }
       }
     }

@@ -358,6 +358,10 @@ const $99a82f6090a5251e$export$4adb7587a1eda30e = async function(artistItem, pag
     };
 };
 
+const $a4fcabfd0bbb32c7$var$lyricCache = new Map;
+
+const $a4fcabfd0bbb32c7$var$MAX_CACHE_SIZE = 50;
+
 const $a4fcabfd0bbb32c7$export$d76128d007d19019 = async function(query, page, type) {
     if (type === "album") return await (0, $99a82f6090a5251e$export$bb9c7f929676dbb6)(query, page);
     const platforms = [ "netease", "qq", "kuwo" ];
@@ -416,6 +420,7 @@ const $a4fcabfd0bbb32c7$export$d76128d007d19019 = async function(query, page, ty
 const $a4fcabfd0bbb32c7$export$a92854129bc50f89 = async function(musicItem, quality) {
     const platform = musicItem.source || "netease";
     const qualityStr = (0, $cyXty.QUALITY_MAP)[quality] || "320k";
+    const cacheKey = `${platform}_${musicItem.id}`;
     try {
         const response = await (0, $lCxOT.requestWithRetry)({
             method: "POST",
@@ -430,10 +435,17 @@ const $a4fcabfd0bbb32c7$export$a92854129bc50f89 = async function(musicItem, qual
             const dataArray = response.data.data;
             if (Array.isArray(dataArray)) {
                 const songData = dataArray.find(item => String(item.id) === String(musicItem.id));
-                if (songData && songData.url) return {
-                    url: songData.url,
-                    quality: quality
-                };
+                if (songData) {
+                    if ($a4fcabfd0bbb32c7$var$lyricCache.size >= $a4fcabfd0bbb32c7$var$MAX_CACHE_SIZE) {
+                        const firstKey = $a4fcabfd0bbb32c7$var$lyricCache.keys().next().value;
+                        if (firstKey) $a4fcabfd0bbb32c7$var$lyricCache.delete(firstKey);
+                    }
+                    $a4fcabfd0bbb32c7$var$lyricCache.set(cacheKey, songData.lyrics || "");
+                    if (songData.url) return {
+                        url: songData.url,
+                        quality: quality
+                    };
+                }
             }
         }
     } catch (e) {
@@ -444,6 +456,10 @@ const $a4fcabfd0bbb32c7$export$a92854129bc50f89 = async function(musicItem, qual
 
 const $a4fcabfd0bbb32c7$export$dd8877a67b94ca98 = async function(musicItem) {
     const platform = musicItem.source || "netease";
+    const cacheKey = `${platform}_${musicItem.id}`;
+    if ($a4fcabfd0bbb32c7$var$lyricCache.has(cacheKey)) return {
+        rawLrc: $a4fcabfd0bbb32c7$var$lyricCache.get(cacheKey)
+    };
     try {
         const response = await (0, $lCxOT.requestWithRetry)({
             method: "POST",
@@ -458,9 +474,16 @@ const $a4fcabfd0bbb32c7$export$dd8877a67b94ca98 = async function(musicItem) {
             const dataArray = response.data.data;
             if (Array.isArray(dataArray)) {
                 const songData = dataArray.find(item => String(item.id) === String(musicItem.id));
-                if (songData && songData.lyrics) return {
-                    rawLrc: songData.lyrics
-                };
+                if (songData && songData.lyrics) {
+                    if ($a4fcabfd0bbb32c7$var$lyricCache.size >= $a4fcabfd0bbb32c7$var$MAX_CACHE_SIZE) {
+                        const firstKey = $a4fcabfd0bbb32c7$var$lyricCache.keys().next().value;
+                        if (firstKey) $a4fcabfd0bbb32c7$var$lyricCache.delete(firstKey);
+                    }
+                    $a4fcabfd0bbb32c7$var$lyricCache.set(cacheKey, songData.lyrics);
+                    return {
+                        rawLrc: songData.lyrics
+                    };
+                }
             }
         }
     } catch (e) {
@@ -632,7 +655,7 @@ const $a4fcabfd0bbb32c7$export$673794af62c4d65e = async function(urlLike) {
 const $882b6d93070905b3$var$pluginInstance = {
     platform: "TuneHub",
     author: "Ohhu",
-    version: "2.1.7",
+    version: "2.1.8",
     defaultSearchType: "music",
     supportedSearchType: [ "music", "album", "artist" ],
     cacheControl: "no-store",
