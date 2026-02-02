@@ -360,8 +360,6 @@ const $99a82f6090a5251e$export$4adb7587a1eda30e = async function(artistItem, pag
 
 const $a4fcabfd0bbb32c7$var$lyricCache = new Map;
 
-const $a4fcabfd0bbb32c7$var$pendingRequests = new Map;
-
 const $a4fcabfd0bbb32c7$var$MAX_CACHE_SIZE = 50;
 
 const $a4fcabfd0bbb32c7$export$d76128d007d19019 = async function(query, page, type) {
@@ -423,7 +421,7 @@ const $a4fcabfd0bbb32c7$export$a92854129bc50f89 = async function(musicItem, qual
     const platform = musicItem.source || "netease";
     const qualityStr = (0, $cyXty.QUALITY_MAP)[quality] || "320k";
     const cacheKey = `${platform}_${musicItem.id}`;
-    const requestPromise = (async () => {
+    try {
         const response = await (0, $lCxOT.requestWithRetry)({
             method: "POST",
             url: `${0, $cyXty.BASE_URL}/v1/parse`,
@@ -433,11 +431,6 @@ const $a4fcabfd0bbb32c7$export$a92854129bc50f89 = async function(musicItem, qual
                 quality: qualityStr
             }
         });
-        return response;
-    })();
-    $a4fcabfd0bbb32c7$var$pendingRequests.set(cacheKey, requestPromise);
-    try {
-        const response = await requestPromise;
         if (response.code === 0 && response.data) {
             const dataArray = response.data.data;
             if (Array.isArray(dataArray)) {
@@ -457,8 +450,6 @@ const $a4fcabfd0bbb32c7$export$a92854129bc50f89 = async function(musicItem, qual
         }
     } catch (e) {
         console.error("Get media source error:", e);
-    } finally {
-        $a4fcabfd0bbb32c7$var$pendingRequests.delete(cacheKey);
     }
     return null;
 };
@@ -469,12 +460,6 @@ const $a4fcabfd0bbb32c7$export$dd8877a67b94ca98 = async function(musicItem) {
     if ($a4fcabfd0bbb32c7$var$lyricCache.has(cacheKey)) return {
         rawLrc: $a4fcabfd0bbb32c7$var$lyricCache.get(cacheKey)
     };
-    if ($a4fcabfd0bbb32c7$var$pendingRequests.has(cacheKey)) try {
-        await $a4fcabfd0bbb32c7$var$pendingRequests.get(cacheKey);
-        if ($a4fcabfd0bbb32c7$var$lyricCache.has(cacheKey)) return {
-            rawLrc: $a4fcabfd0bbb32c7$var$lyricCache.get(cacheKey)
-        };
-    } catch (e) {}
     try {
         const response = await (0, $lCxOT.requestWithRetry)({
             method: "POST",
@@ -670,7 +655,7 @@ const $a4fcabfd0bbb32c7$export$673794af62c4d65e = async function(urlLike) {
 const $882b6d93070905b3$var$pluginInstance = {
     platform: "TuneHub",
     author: "Ohhu",
-    version: "2.1.9",
+    version: "2.1.8",
     defaultSearchType: "music",
     supportedSearchType: [ "music", "album", "artist" ],
     cacheControl: "no-store",

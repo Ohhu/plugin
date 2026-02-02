@@ -14,8 +14,6 @@ import { searchAlbum } from './simulated';
 
 // 歌词缓存 (避免重复调用 API)
 const lyricCache = new Map<string, string>();
-// 正在进行的请求缓存 (避免并行重复请求)
-const pendingRequests = new Map<string, Promise<any>>();
 const MAX_CACHE_SIZE = 50;
 
 // 搜索功能 (使用方法下发)
@@ -108,8 +106,7 @@ export const getMediaSource = async function (
   const qualityStr = QUALITY_MAP[quality] || "320k";
   const cacheKey = `${platform}_${musicItem.id}`;
 
-  // 创建请求 Promise 并缓存，让 getLyric 可以等待同一个请求
-  const requestPromise = (async () => {
+  try {
     const response = await requestWithRetry<ApiResponse<ParseResponseData>>({
       method: 'POST',
       url: `${BASE_URL}/v1/parse`,
@@ -119,21 +116,14 @@ export const getMediaSource = async function (
         quality: qualityStr
       } as ParseRequest
     });
-    return response;
-  })();
-
-  // 存入 pending 缓存
-  pendingRequests.set(cacheKey, requestPromise);
-
-  try {
-    const response = await requestPromise;
 
     if (response.code === 0 && response.data) {
+      // API 返回 data.data 是数组，需要从中查找对应 ID 的歌曲
       const dataArray = (response.data as any).data;
       if (Array.isArray(dataArray)) {
         const songData = dataArray.find((item: any) => String(item.id) === String(musicItem.id));
         if (songData) {
-          // 存入歌词缓存
+          // 缓存歌词
           if (lyricCache.size >= MAX_CACHE_SIZE) {
             const firstKey = lyricCache.keys().next().value;
             if (firstKey) lyricCache.delete(firstKey);
@@ -141,21 +131,22 @@ export const getMediaSource = async function (
           lyricCache.set(cacheKey, songData.lyrics || "");
 
           if (songData.url) {
-            return { url: songData.url, quality };
+            return {
+              url: songData.url,
+              quality
+            };
           }
         }
       }
     }
   } catch (e) {
     console.error("Get media source error:", e);
-  } finally {
-    pendingRequests.delete(cacheKey);
   }
 
   return null;
 };
 
-// 获取歌词 (优先从缓存读取，或等待正在进行的请求)
+// 获取歌词 (优先从缓存读取)
 export const getLyric = async function (
   musicItem: IMusic.IMusicItemPartial
 ): Promise<ILyric.ILyricSource | null> {
@@ -167,20 +158,7 @@ export const getLyric = async function (
     return { rawLrc: lyricCache.get(cacheKey)! };
   }
 
-  // 如果有正在进行的请求，等待它完成
-  if (pendingRequests.has(cacheKey)) {
-    try {
-      await pendingRequests.get(cacheKey);
-      // 请求完成后再次检查缓存
-      if (lyricCache.has(cacheKey)) {
-        return { rawLrc: lyricCache.get(cacheKey)! };
-      }
-    } catch (e) {
-      // 忽略错误，继续尝试自己请求
-    }
-  }
-
-  // 缓存没有且没有正在进行的请求，则发起新请求
+  // 缓存没有则请求 API
   try {
     const response = await requestWithRetry<ApiResponse<ParseResponseData>>({
       method: 'POST',
