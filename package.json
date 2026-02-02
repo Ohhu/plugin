@@ -6,7 +6,7 @@
   "main": "dist/Tunehub.js",
   "scripts": {
     "watch": "parcel watch",
-    "build": "parcel build && terser dist/Tunehub.js -o dist/Tunehub.js --comments false && prettier dist/Tunehub.js --write"
+    "build": "parcel build && terser dist/Tunehub.js -o dist/Tunehub.js --comments false --format beautify"
   },
   "keywords": [
     "musicfree",
@@ -28,7 +28,6 @@
   "devDependencies": {
     "@types/node": "^25.0.3",
     "parcel": "^2.9.3",
-    "prettier": "^3.8.1",
     "terser": "^5.37.0",
     "typescript": "^5.1.6"
   },

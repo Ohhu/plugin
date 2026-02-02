@@ -27,7 +27,7 @@ import {
 const pluginInstance: IPlugin.IPluginDefine = {
   platform: "TuneHub",
   author: "Ohhu",
-  version: "2.1.9",
+  version: "2.1.8",
   defaultSearchType: "music",
   supportedSearchType: ["music", "album", "artist"],
   cacheControl: "no-store",
