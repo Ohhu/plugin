@@ -2,7 +2,7 @@
 export const BASE_URL = "https://gateway.karpov.cn/api/proxy";
 
 // API Key
-export const API_KEY = "mk_";
+export const API_KEY = "mk_ZmTkVzg-vfLQn2iNszi9YUJWpssSIxyM";
 
 export const PROVIDER = "qqmusic";
 

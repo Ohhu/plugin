@@ -45,7 +45,9 @@ export const searchArtist = async function (
 ): Promise<IPlugin.ISearchResult<'artist'>> {
   try {
     const songs = await searchRawSongs(query, page);
-    const artists = uniqueById(songs.flatMap(mapSongArtists));
+    const artists = uniqueById<IArtist.IArtistItem>(
+      ([] as IArtist.IArtistItem[]).concat(...songs.map(mapSongArtists))
+    );
 
     return {
       isEnd: true,

@@ -6,14 +6,10 @@
     "sourceMap": false,
     "module": "CommonJS",
     "target": "ES2017",
+    "rootDir": "./src",
     "outDir": "dist",
-    "baseUrl": ".",
     "esModuleInterop": true,
-    "types": [
-      "node",
-      "./types/mediaType.d.ts",
-      "./types/plugin.d.ts"
-    ]
+    "types": []
   },
   "include": [
     "./types/*",

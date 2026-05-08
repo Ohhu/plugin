@@ -7,6 +7,10 @@
  * - constants.ts: 常量定义
  */
 
+declare const module: {
+  exports: IPlugin.IPluginDefine;
+};
+
 // 导入 API 原生支持的功能
 import {
   search,

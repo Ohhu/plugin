@@ -6,7 +6,7 @@ function $parcel$interopDefault(a) {
 
 const $af8d31735c159a26$export$ca6dda5263526f75 = "https://gateway.karpov.cn/api/proxy";
 
-const $af8d31735c159a26$export$a9861bd62f48e142 = "mk_";
+const $af8d31735c159a26$export$a9861bd62f48e142 = "mk_ZmTkVzg-vfLQn2iNszi9YUJWpssSIxyM";
 
 const $af8d31735c159a26$export$d5f2363fcb2d1ef9 = "qqmusic";
 
@@ -181,8 +181,8 @@ const $99a82f6090a5251e$export$bb9c7f929676dbb6 = async function(query, page) {
 const $99a82f6090a5251e$export$8bdc97021ba8f894 = async function(query, page) {
     try {
         const songs = await $99a82f6090a5251e$var$searchRawSongs(query, page);
-        const artists = (0, $9ba0f9a5c47c04f2$export$220cca749de3aca)(songs.flatMap((0, 
-        $9ba0f9a5c47c04f2$export$ab03dbb02a7afa1d)));
+        const artists = (0, $9ba0f9a5c47c04f2$export$220cca749de3aca)([].concat(...songs.map((0, 
+        $9ba0f9a5c47c04f2$export$ab03dbb02a7afa1d))));
         return {
             isEnd: true,
             data: (0, $9ba0f9a5c47c04f2$export$b2e1e35494b27b67)(artists, query, artist => artist.name, true)
