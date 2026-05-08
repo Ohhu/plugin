@@ -1,6 +1,10 @@
 # 依赖
 /node_modules
 
+# 本地 Agent 协作文件
+AGENTS.md
+QQ_MUSIC_REFACTOR_PLAN.md
+
 # 构建缓存
 .parcel-cache
 

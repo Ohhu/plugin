@@ -19,6 +19,14 @@
 - 排行榜
 - 原生专辑歌曲列表
 
+## 使用
+
+复制下面的链接，在 MusicFree 中导入插件：
+
+```text
+https://raw.githubusercontent.com/Ohhu/plugin/music-free/dist/QQMusic.js
+```
+
 ## 构建
 
 ```bash
