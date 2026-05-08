@@ -1,0 +1,294 @@
+{
+  "testedAt": "2026-05-07",
+  "baseUrl": "https://gateway.karpov.cn/api/proxy",
+  "auth": {
+    "requiredHeader": "X-API-Key",
+    "notes": [
+      "Authorization: Bearer did not authenticate this proxy route.",
+      "The full API key is intentionally not stored in this file."
+    ]
+  },
+  "samples": {
+    "qqmusicSearchSongs": {
+      "request": "GET /qqmusic/search/songs?q=周杰伦&page=1&page_size=3",
+      "status": 200,
+      "response": {
+        "code": 200,
+        "message": "success",
+        "data": {
+          "hasMore": true,
+          "items": [
+            {
+              "album": {
+                "cover": "https://y.qq.com/music/photo_new/T002R300x300M000000MkMni19ClKG_5.jpg",
+                "id": "000MkMni19ClKG",
+                "title": "叶惠美"
+              },
+              "artist": "周杰伦",
+              "artists": [
+                {
+                  "id": "0025NhlN2yWrP4",
+                  "name": "周杰伦"
+                }
+              ],
+              "durationSeconds": 269,
+              "id": "0039MnYb0qxYhV",
+              "isVipOnly": true,
+              "playable": false,
+              "provider": "qqmusic",
+              "publishDate": "2003-07-31",
+              "title": "晴天"
+            }
+          ],
+          "page": 1,
+          "pageSize": 3,
+          "total": 43841
+        }
+      }
+    },
+    "qqmusicSongDetail": {
+      "request": "GET /qqmusic/songs/0039MnYb0qxYhV",
+      "status": 200,
+      "response": {
+        "code": 200,
+        "message": "success",
+        "data": {
+          "album": {
+            "cover": "https://y.qq.com/music/photo_new/T002R300x300M000000MkMni19ClKG_5.jpg",
+            "id": "000MkMni19ClKG",
+            "title": "叶惠美"
+          },
+          "artist": "周杰伦",
+          "artists": [
+            {
+              "id": "0025NhlN2yWrP4",
+              "name": "周杰伦"
+            }
+          ],
+          "durationSeconds": 269,
+          "id": "0039MnYb0qxYhV",
+          "isVipOnly": true,
+          "playable": false,
+          "provider": "qqmusic",
+          "publishDate": "2003-07-31",
+          "title": "晴天"
+        }
+      }
+    },
+    "qqmusicSongUrl": {
+      "request": "GET /qqmusic/songs/0039MnYb0qxYhV/url?quality=MP3_320",
+      "status": 200,
+      "responseShape": {
+        "code": 200,
+        "message": "success",
+        "data": {
+          "audio": {
+            "expiresInSeconds": 7200,
+            "expiresLabel": "2小时",
+            "format": "mp3",
+            "quality": "MP3_320",
+            "qualityLabel": "HQ高品质 MP3 320kbps",
+            "sizeBytes": 10792943,
+            "sizeLabel": "10.3MB",
+            "url": "https://ws.stream.qqmusic.qq.com/...temporary-url..."
+          },
+          "song": {
+            "album": "叶惠美",
+            "artist": "周杰伦",
+            "artists": [
+              {
+                "id": "0025NhlN2yWrP4",
+                "name": "周杰伦"
+              }
+            ],
+            "cover": "https://y.qq.com/music/photo_new/T002R300x300M000000MkMni19ClKG_5.jpg",
+            "durationSeconds": 269,
+            "id": "0039MnYb0qxYhV",
+            "isVipOnly": true,
+            "provider": "qqmusic",
+            "publishDate": "2003-07-31",
+            "title": "晴天"
+          }
+        }
+      }
+    },
+    "qqmusicLyric": {
+      "request": "GET /qqmusic/songs/0039MnYb0qxYhV/lyric",
+      "status": 200,
+      "responseShape": {
+        "code": 200,
+        "message": "success",
+        "data": {
+          "lyric": {
+            "lrc": "[ti:晴天]\\n[ar:周杰伦]\\n[al:叶惠美]\\n...",
+            "qrc": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\\n<QrcInfos>...",
+            "roma": "",
+            "trans": ""
+          },
+          "song": {
+            "album": "叶惠美",
+            "artist": "周杰伦",
+            "artists": [
+              {
+                "id": "0025NhlN2yWrP4",
+                "name": "周杰伦"
+              }
+            ],
+            "cover": "https://y.qq.com/music/photo_new/T002R300x300M000000MkMni19ClKG_5.jpg",
+            "durationSeconds": 269,
+            "id": "0039MnYb0qxYhV",
+            "provider": "qqmusic",
+            "title": "晴天"
+          }
+        }
+      }
+    },
+    "qqmusicAlbumDetail": {
+      "request": "GET /qqmusic/albums/000MkMni19ClKG",
+      "status": 200,
+      "response": {
+        "code": 200,
+        "message": "success",
+        "data": {
+          "ext": {},
+          "id": "000MkMni19ClKG",
+          "provider": "qqmusic",
+          "title": ""
+        }
+      },
+      "notes": [
+        "This did not include songs, cover, artists, or album title in the tested QQ Music case.",
+        "This differs from docs/qqmusic-gateway-openapi.yaml Album schema, which advertises songs."
+      ]
+    },
+    "qqmusicArtistDetail": {
+      "request": "GET /qqmusic/artists/0025NhlN2yWrP4",
+      "status": 200,
+      "response": {
+        "code": 200,
+        "message": "success",
+        "data": {
+          "avatar": "https://y.gtimg.cn/music/photo_new/T001R300x300M0000025NhlN2yWrP4_11.jpg",
+          "background": "http://y.gtimg.cn/music/photo_new/T001R800x800M0000025NhlN2yWrP4_11.jpg",
+          "id": "0025NhlN2yWrP4",
+          "mid": "0025NhlN2yWrP4",
+          "name": "周杰伦",
+          "provider": "qqmusic",
+          "type": 0
+        }
+      }
+    },
+    "qqmusicPlaylistDetail": {
+      "request": "GET /qqmusic/playlists/9629884311",
+      "status": 200,
+      "responseShape": {
+        "code": 200,
+        "message": "success",
+        "data": {
+          "cover": "https://y.gtimg.cn/music/photo_new/T002R500x500M000001jyyWD1QT1wS.jpg",
+          "creator": {
+            "avatar": "http://thirdqq.qlogo.cn/...",
+            "id": "964683647",
+            "nickname": "Haa."
+          },
+          "description": "",
+          "hasMore": true,
+          "id": "9629884311",
+          "playCount": 0,
+          "provider": "qqmusic",
+          "songCount": 279,
+          "songs": [
+            {
+              "album": {
+                "cover": "https://y.qq.com/music/photo_new/T002R300x300M000001jyyWD1QT1wS_2.jpg",
+                "id": "001jyyWD1QT1wS",
+                "title": "借过一下"
+              },
+              "artist": "周深",
+              "artists": [
+                {
+                  "id": "003fA5G40k6hKc",
+                  "name": "周深"
+                }
+              ],
+              "durationSeconds": 293,
+              "id": "00446BOH0yUBXf",
+              "isVipOnly": true,
+              "playable": false,
+              "provider": "qqmusic",
+              "publishDate": "2024-05-15",
+              "title": "借过一下"
+            }
+          ],
+          "title": "导出"
+        }
+      }
+    },
+    "neteaseSearchSongs": {
+      "request": "GET /netease/search/songs?q=周杰伦&page=1&page_size=2",
+      "status": 200,
+      "response": {
+        "code": 200,
+        "message": "success",
+        "data": {
+          "hasMore": true,
+          "items": [
+            {
+              "album": {
+                "cover": "http://p2.music.126.net/yD9vbpuILH-tqNRIaP640g==/109951163038292176.jpg",
+                "id": "36412633",
+                "title": "中国新歌声第二季 第13期"
+              },
+              "artist": "周杰伦 / 李硕 / 张鑫",
+              "artists": [
+                {
+                  "id": "6452",
+                  "name": "周杰伦"
+                },
+                {
+                  "id": "12010120",
+                  "name": "李硕"
+                },
+                {
+                  "id": "12319226",
+                  "name": "张鑫"
+                }
+              ],
+              "durationSeconds": 238,
+              "id": "509781655",
+              "isVipOnly": true,
+              "playable": false,
+              "provider": "netease",
+              "publishDate": "2017-10-04",
+              "title": "想你就写信 (Live)"
+            }
+          ],
+          "page": 1,
+          "pageSize": 2,
+          "total": 275
+        }
+      }
+    },
+    "kugouSearchSongs": {
+      "request": "GET /kugou/search/songs?q=周杰伦&page=1&page_size=2",
+      "status": 404,
+      "response": {
+        "code": 40400,
+        "message": "未知的音乐提供商"
+      },
+      "notes": [
+        "Although the OpenAPI Provider enum lists kugou, this proxy route did not recognize kugou in this test."
+      ]
+    }
+  },
+  "importantDifferencesFromOpenApi": [
+    "Proxy base path is /api/proxy/{provider}/..., not /v1/{provider}/...",
+    "Proxy auth uses X-API-Key, while the OpenAPI document says Authorization: Bearer <api_key>.",
+    "Success code is 200, not code = 0.",
+    "Song fields use durationSeconds, publishDate, album.title/cover, and artist string; the OpenAPI schema uses duration, publishTime, album.name/picUrl.",
+    "Song URL response nests data.audio and data.song, not a flat SongURL object.",
+    "Lyric response nests data.lyric and data.song; lyric includes lrc/qrc/roma/trans.",
+    "QQ Music album detail returned only minimal album data and no songs in the tested case.",
+    "kugou provider returned 40400 unknown provider on the proxy route."
+  ]
+}

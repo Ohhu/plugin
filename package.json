@@ -1,0 +1,39 @@
+{
+  "name": "qqmusic-musicfree-plugin",
+  "version": "3.0.0",
+  "description": "QQ 音乐代理 API 插件 - MusicFree 单平台音乐插件",
+  "source": "src/index.ts",
+  "main": "dist/QQMusic.js",
+  "scripts": {
+    "watch": "parcel watch",
+    "build": "parcel build && terser dist/QQMusic.js -o dist/QQMusic.js --comments false --format beautify"
+  },
+  "keywords": [
+    "musicfree",
+    "plugin",
+    "music",
+    "qqmusic",
+    "qq"
+  ],
+  "author": {
+    "name": "Ohhu",
+    "email": "vhhcvuce@gmail.com"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.27.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "parcel": "^2.9.3",
+    "terser": "^5.37.0",
+    "typescript": "^5.1.6"
+  },
+  "target": {
+    "main": {
+      "includeNodeModules": {
+        "axios": false
+      }
+    }
+  }
+}
