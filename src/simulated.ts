@@ -7,7 +7,7 @@ import {
   sortBySimilarity,
   uniqueById
 } from './utils';
-import { AlbumInfo, SearchSongsData } from './types';
+import { AlbumDetailData, AlbumInfo, SearchSongsData } from './types';
 
 async function searchRawSongs(query: string, page: number, pageSize = PAGE_SIZE) {
   const data = await requestProxy<SearchSongsData>('/search/songs', {
@@ -64,20 +64,19 @@ export const getAlbumInfo = async function (
   page: number
 ): Promise<IPlugin.IAlbumInfoResult> {
   try {
-    const albumName = albumItem.title || String(albumItem.id);
-    const artistName = albumItem.artist || "";
-    const searchKeyword = artistName ? `${artistName} ${albumName}` : albumName;
-    const songs = await searchRawSongs(searchKeyword, page, 100);
-    const musicList = songs
-      .filter((song) => {
-        const album = mapSongToAlbumItem(song);
-        return album?.title.toLowerCase().includes(albumName.toLowerCase());
-      })
-      .map(mapSongToMusicItem);
+    const album = await requestProxy<AlbumDetailData>(
+      `/albums/${encodeURIComponent(String(albumItem.id))}`
+    );
+    const songs = album?.songs || [];
 
     return {
       isEnd: true,
-      musicList
+      albumItem: album ? {
+        title: album.title || album.name || albumItem.title,
+        artwork: album.cover || album.picUrl || albumItem.artwork,
+        qqmusicRaw: album
+      } : undefined,
+      musicList: songs.map(mapSongToMusicItem)
     };
   } catch (e) {
     console.error("Get album info error:", e);

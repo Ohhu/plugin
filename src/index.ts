@@ -31,12 +31,12 @@ import {
 const pluginInstance: IPlugin.IPluginDefine = {
   platform: "QQ音乐",
   author: "Ohhu",
-  version: "3.0.0",
+  version: "2.1.1",
   defaultSearchType: "music",
   supportedSearchType: ["music", "album", "artist"],
   cacheControl: "no-store",
   primaryKey: ["id", "source"],
-  srcUrl: "",
+  srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/music-free/dist/QQMusic.js",
 
   // API 原生支持的功能
   search,

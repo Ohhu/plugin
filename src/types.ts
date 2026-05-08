@@ -80,6 +80,17 @@ export interface PlaylistData {
   title?: string;
 }
 
+export interface AlbumDetailData {
+  cover?: string;
+  ext?: Record<string, any>;
+  id: string;
+  name?: string;
+  picUrl?: string;
+  provider?: string;
+  songs?: ApiSong[];
+  title?: string;
+}
+
 export interface AlbumInfo {
   id: string;
   platform: string;

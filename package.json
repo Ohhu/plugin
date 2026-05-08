@@ -1,6 +1,6 @@
 {
   "name": "qqmusic-musicfree-plugin",
-  "version": "3.0.0",
+  "version": "2.1.1",
   "description": "QQ 音乐代理 API 插件 - MusicFree 单平台音乐插件",
   "source": "src/index.ts",
   "main": "dist/QQMusic.js",

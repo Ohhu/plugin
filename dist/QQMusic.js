@@ -198,17 +198,16 @@ const $99a82f6090a5251e$export$8bdc97021ba8f894 = async function(query, page) {
 
 const $99a82f6090a5251e$export$dc862406499065f2 = async function(albumItem, page) {
     try {
-        const albumName = albumItem.title || String(albumItem.id);
-        const artistName = albumItem.artist || "";
-        const searchKeyword = artistName ? `${artistName} ${albumName}` : albumName;
-        const songs = await $99a82f6090a5251e$var$searchRawSongs(searchKeyword, page, 100);
-        const musicList = songs.filter(song => {
-            const album = (0, $9ba0f9a5c47c04f2$export$4252b4fefcc1b0ca)(song);
-            return album?.title.toLowerCase().includes(albumName.toLowerCase());
-        }).map((0, $9ba0f9a5c47c04f2$export$d917c56e92199476));
+        const album = await (0, $9ba0f9a5c47c04f2$export$2c3d55c000f8fb31)(`/albums/${encodeURIComponent(String(albumItem.id))}`);
+        const songs = album?.songs || [];
         return {
             isEnd: true,
-            musicList: musicList
+            albumItem: album ? {
+                title: album.title || album.name || albumItem.title,
+                artwork: album.cover || album.picUrl || albumItem.artwork,
+                qqmusicRaw: album
+            } : undefined,
+            musicList: songs.map((0, $9ba0f9a5c47c04f2$export$d917c56e92199476))
         };
     } catch (e) {
         console.error("Get album info error:", e);
@@ -387,12 +386,12 @@ const $a4fcabfd0bbb32c7$export$96ef2693ce7e7983 = async function(sheetItem, page
 const $882b6d93070905b3$var$pluginInstance = {
     platform: "QQ音乐",
     author: "Ohhu",
-    version: "3.0.0",
+    version: "2.1.1",
     defaultSearchType: "music",
     supportedSearchType: [ "music", "album", "artist" ],
     cacheControl: "no-store",
     primaryKey: [ "id", "source" ],
-    srcUrl: "",
+    srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/music-free/dist/QQMusic.js",
     search: $a4fcabfd0bbb32c7$export$d76128d007d19019,
     getMusicInfo: $a4fcabfd0bbb32c7$export$cec695f762a1db32,
     getMediaSource: $a4fcabfd0bbb32c7$export$a92854129bc50f89,
