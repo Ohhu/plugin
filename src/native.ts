@@ -11,6 +11,7 @@ import {
   SongUrlData
 } from './types';
 import { searchAlbum, searchArtist } from './simulated';
+import { extractQQMusicPlaylistId, fetchQQMusicPlaylist } from './qqmusicPlaylist';
 
 const lyricCache = new Map<string, string>();
 const MAX_CACHE_SIZE = 50;
@@ -131,33 +132,17 @@ export const getLyric = async function (
 
 export async function getPlaylist(id: string): Promise<PlaylistData | null> {
   try {
-    return await requestProxy<PlaylistData>(`/playlists/${encodeURIComponent(id)}`);
+    return await fetchQQMusicPlaylist(id);
   } catch (e) {
     console.error("Get playlist error:", e);
     return null;
   }
 }
 
-function extractPlaylistId(urlLike: string): string | null {
-  const patterns = [
-    /y\.qq\.com\/n\/ryqq\/playlist\/(\d+)/,
-    /[?&]id=(\d+)/,
-    /\/playlist\/(\d+)/,
-    /^(\d+)$/
-  ];
-
-  for (const pattern of patterns) {
-    const match = urlLike.match(pattern);
-    if (match) return match[1];
-  }
-
-  return null;
-}
-
 export const importMusicSheet = async function (
   urlLike: string
 ): Promise<IMusic.IMusicItem[] | null> {
-  const playlistId = extractPlaylistId(urlLike);
+  const playlistId = extractQQMusicPlaylistId(urlLike);
   if (!playlistId) {
     return null;
   }
@@ -170,7 +155,8 @@ export const getMusicSheetInfo = async function (
   sheetItem: IMusic.IMusicSheetItem,
   page: number
 ): Promise<IPlugin.ISheetInfoResult | null> {
-  const playlist = await getPlaylist(String(sheetItem.id));
+  const playlistId = extractQQMusicPlaylistId(String(sheetItem.id)) || String(sheetItem.id);
+  const playlist = await getPlaylist(playlistId);
   const songs = playlist?.songs || [];
   const start = Math.max(page - 1, 0) * PAGE_SIZE;
   const musicList = songs.slice(start, start + PAGE_SIZE).map(mapSongToMusicItem);
