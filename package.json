@@ -1,12 +1,12 @@
 {
-  "name": "qqmusic-musicfree-plugin",
+  "name": "qqmusic-playlist-importer-plugin",
   "version": "2.1.1",
-  "description": "QQ 音乐代理 API 插件 - MusicFree 单平台音乐插件",
+  "description": "QQ 音乐歌单导入插件 - 仅导入歌单，播放交给 MusicFree 音源重定向",
   "source": "src/index.ts",
-  "main": "dist/QQMusic.js",
+  "main": "dist/QQPlaylistImporter.js",
   "scripts": {
     "watch": "parcel watch",
-    "build": "parcel build && terser dist/QQMusic.js -o dist/QQMusic.js --comments false --format beautify"
+    "build": "parcel build && terser dist/QQPlaylistImporter.js -o dist/QQPlaylistImporter.js --comments false --format beautify"
   },
   "keywords": [
     "musicfree",
