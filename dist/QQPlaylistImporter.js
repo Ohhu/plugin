@@ -20,6 +20,10 @@ const $882b6d93070905b3$var$REQUEST_TIMEOUT_MS = 1e4;
 
 const $882b6d93070905b3$var$QQ_MUSIC_ERROR_RESPONSE_LENGTH = 108;
 
+const $882b6d93070905b3$var$COVER_BASE_URL = "https://y.qq.com/music/photo_new/T002R300x300M000";
+
+const $882b6d93070905b3$var$LYRIC_URL = "https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg";
+
 function $882b6d93070905b3$var$add32(a, b) {
     return a + b & 4294967295;
 }
@@ -256,18 +260,51 @@ async function $882b6d93070905b3$var$fetchPlaylistPage(disstid, songBegin, songN
     throw lastError || new Error("All QQ Music playlist requests failed");
 }
 
-function $882b6d93070905b3$var$getAlbumCover(albumMid) {
-    return albumMid ? `https://y.qq.com/music/photo_new/T002R300x300M000${albumMid}_5.jpg` : undefined;
+function $882b6d93070905b3$var$isVersionedAlbumMid(albumMid) {
+    return /_\d+$/.test(albumMid);
+}
+
+function $882b6d93070905b3$var$getAlbumCover(albumPmid, albumMid) {
+    const directCoverMid = albumPmid || (albumMid && $882b6d93070905b3$var$isVersionedAlbumMid(albumMid) ? albumMid : "");
+    if (directCoverMid) return `${$882b6d93070905b3$var$COVER_BASE_URL}${directCoverMid}.jpg`;
+    return albumMid ? `${$882b6d93070905b3$var$COVER_BASE_URL}${albumMid}_5.jpg` : undefined;
+}
+
+function $882b6d93070905b3$var$parseQQMusicJsonp(text) {
+    const trimmed = text.trim();
+    const match = trimmed.match(/^[\w$]+\(([\s\S]*)\)$/);
+    return JSON.parse(match ? match[1] : trimmed);
+}
+
+function $882b6d93070905b3$var$decodeBase64Utf8(value) {
+    if (!value) return "";
+    const bufferCtor = globalThis.Buffer;
+    if (bufferCtor?.from) return bufferCtor.from(value, "base64").toString("utf8");
+    const atobFn = globalThis.atob;
+    if (typeof atobFn !== "function") return value;
+    const binary = atobFn(value);
+    const encoded = Array.from(binary, char => `%${char.charCodeAt(0).toString(16).padStart(2, "0")}`).join("");
+    try {
+        return decodeURIComponent(encoded);
+    } catch (_) {
+        return binary;
+    }
+}
+
+function $882b6d93070905b3$var$decodeHtmlEntities(value) {
+    return value.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code))).replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16))).replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
 }
 
 function $882b6d93070905b3$var$mapQQSongToMusicItem(song) {
     const singers = Array.isArray(song.singer) ? song.singer : [];
-    const albumMid = song.album?.pmid || song.album?.mid || song.albummid || "";
+    const albumPmid = song.album?.pmid || "";
+    const albumMid = song.album?.mid || song.albummid || "";
+    const exportedAlbumMid = albumPmid || albumMid;
     const songMid = String(song.mid || song.songmid || "");
     const songId = String(song.id || song.songid || songMid);
     const albumId = String(song.album?.id || "");
     const albumTitle = song.album?.title || song.album?.name || song.albumname || "";
-    const artwork = $882b6d93070905b3$var$getAlbumCover(albumMid);
+    const artwork = $882b6d93070905b3$var$getAlbumCover(albumPmid, albumMid);
     return {
         id: songId,
         songmid: songMid,
@@ -279,7 +316,7 @@ function $882b6d93070905b3$var$mapQQSongToMusicItem(song) {
         artwork: artwork,
         duration: song.interval || song.duration,
         albumid: albumId,
-        albummid: albumMid,
+        albummid: exportedAlbumMid,
         provider: $882b6d93070905b3$var$PROVIDER,
         publishDate: song.time_public,
         isVipOnly: song.pay?.pay_play === 1,
@@ -340,10 +377,35 @@ const $882b6d93070905b3$var$getMusicSheetInfo = async function(sheetItem, page) 
     };
 };
 
+const $882b6d93070905b3$var$getLyric = async function(musicItem) {
+    const songMid = String(musicItem.songmid || musicItem.mid || "");
+    if (!songMid) return null;
+    const response = await (0, $parcel$interopDefault($8zHUo$axios)).get(`${$882b6d93070905b3$var$LYRIC_URL}?songmid=${songMid}&g_tk=${Date.now()}`, {
+        headers: {
+            Referer: "https://y.qq.com/portal/player.html",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        },
+        timeout: $882b6d93070905b3$var$REQUEST_TIMEOUT_MS,
+        responseType: "text",
+        transformResponse: [ data => data ]
+    });
+    const text = typeof response.data === "string" ? response.data : JSON.stringify(response.data);
+    const payload = $882b6d93070905b3$var$parseQQMusicJsonp(text);
+    const rawLrc = $882b6d93070905b3$var$decodeHtmlEntities($882b6d93070905b3$var$decodeBase64Utf8(payload.lyric));
+    if (!rawLrc) return null;
+    const translation = $882b6d93070905b3$var$decodeHtmlEntities($882b6d93070905b3$var$decodeBase64Utf8(payload.trans));
+    return translation ? {
+        rawLrc: rawLrc,
+        translation: translation
+    } : {
+        rawLrc: rawLrc
+    };
+};
+
 const $882b6d93070905b3$var$pluginInstance = {
     platform: $882b6d93070905b3$var$PLATFORM,
     author: "Ohhu",
-    version: "1.0.0",
+    version: "2.1.2",
     cacheControl: "no-store",
     primaryKey: [ "id", "songmid", "source" ],
     hints: {
@@ -351,7 +413,8 @@ const $882b6d93070905b3$var$pluginInstance = {
         importMusicItem: []
     },
     importMusicSheet: $882b6d93070905b3$var$importMusicSheet,
-    getMusicSheetInfo: $882b6d93070905b3$var$getMusicSheetInfo
+    getMusicSheetInfo: $882b6d93070905b3$var$getMusicSheetInfo,
+    getLyric: $882b6d93070905b3$var$getLyric
 };
 
 module.exports = $882b6d93070905b3$var$pluginInstance;

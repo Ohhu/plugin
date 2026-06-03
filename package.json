@@ -1,6 +1,6 @@
 {
   "name": "qqmusic-playlist-importer-plugin",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "QQ 音乐歌单导入插件 - 仅导入歌单，播放交给 MusicFree 音源重定向",
   "source": "src/index.ts",
   "main": "dist/QQPlaylistImporter.js",

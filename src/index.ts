@@ -22,6 +22,8 @@ const PAGE_SIZE = 30;
 const MAX_TOTAL_SONGS = 10000;
 const REQUEST_TIMEOUT_MS = 10000;
 const QQ_MUSIC_ERROR_RESPONSE_LENGTH = 108;
+const COVER_BASE_URL = "https://y.qq.com/music/photo_new/T002R300x300M000";
+const LYRIC_URL = "https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg";
 
 interface QQMusicSinger {
   id?: number | string;
@@ -360,18 +362,66 @@ async function fetchPlaylistPage(disstid: string, songBegin: number, songNum: nu
   throw lastError || new Error("All QQ Music playlist requests failed");
 }
 
-function getAlbumCover(albumMid?: string): string | undefined {
-  return albumMid ? `https://y.qq.com/music/photo_new/T002R300x300M000${albumMid}_5.jpg` : undefined;
+function isVersionedAlbumMid(albumMid: string): boolean {
+  return /_\d+$/.test(albumMid);
+}
+
+function getAlbumCover(albumPmid?: string, albumMid?: string): string | undefined {
+  const directCoverMid = albumPmid || (albumMid && isVersionedAlbumMid(albumMid) ? albumMid : "");
+  if (directCoverMid) return `${COVER_BASE_URL}${directCoverMid}.jpg`;
+  return albumMid ? `${COVER_BASE_URL}${albumMid}_5.jpg` : undefined;
+}
+
+function parseQQMusicJsonp(text: string): any {
+  const trimmed = text.trim();
+  const match = trimmed.match(/^[\w$]+\(([\s\S]*)\)$/);
+  return JSON.parse(match ? match[1] : trimmed);
+}
+
+function decodeBase64Utf8(value?: string): string {
+  if (!value) return "";
+
+  const bufferCtor = (globalThis as any).Buffer;
+  if (bufferCtor?.from) {
+    return bufferCtor.from(value, "base64").toString("utf8");
+  }
+
+  const atobFn = (globalThis as any).atob;
+  if (typeof atobFn !== "function") return value;
+
+  const binary = atobFn(value);
+  const encoded = Array.from(binary, (char) =>
+    `%${char.charCodeAt(0).toString(16).padStart(2, "0")}`
+  ).join("");
+
+  try {
+    return decodeURIComponent(encoded);
+  } catch (_) {
+    return binary;
+  }
+}
+
+function decodeHtmlEntities(value: string): string {
+  return value
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)))
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
 }
 
 function mapQQSongToMusicItem(song: QQMusicSong): IMusic.IMusicItem {
   const singers = Array.isArray(song.singer) ? song.singer : [];
-  const albumMid = song.album?.pmid || song.album?.mid || song.albummid || "";
+  const albumPmid = song.album?.pmid || "";
+  const albumMid = song.album?.mid || song.albummid || "";
+  const exportedAlbumMid = albumPmid || albumMid;
   const songMid = String(song.mid || song.songmid || "");
   const songId = String(song.id || song.songid || songMid);
   const albumId = String(song.album?.id || "");
   const albumTitle = song.album?.title || song.album?.name || song.albumname || "";
-  const artwork = getAlbumCover(albumMid);
+  const artwork = getAlbumCover(albumPmid, albumMid);
 
   return {
     id: songId,
@@ -384,7 +434,7 @@ function mapQQSongToMusicItem(song: QQMusicSong): IMusic.IMusicItem {
     artwork,
     duration: song.interval || song.duration,
     albumid: albumId,
-    albummid: albumMid,
+    albummid: exportedAlbumMid,
     provider: PROVIDER,
     publishDate: song.time_public,
     isVipOnly: song.pay?.pay_play === 1,
@@ -449,10 +499,33 @@ const getMusicSheetInfo: IPlugin.IPluginDefine['getMusicSheetInfo'] = async func
   };
 };
 
+const getLyric: IPlugin.IPluginDefine['getLyric'] = async function (musicItem) {
+  const songMid = String(musicItem.songmid || musicItem.mid || "");
+  if (!songMid) return null;
+
+  const response = await axios.get<string>(`${LYRIC_URL}?songmid=${songMid}&g_tk=${Date.now()}`, {
+    headers: {
+      "Referer": "https://y.qq.com/portal/player.html",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    },
+    timeout: REQUEST_TIMEOUT_MS,
+    responseType: "text",
+    transformResponse: [(data) => data]
+  });
+
+  const text = typeof response.data === "string" ? response.data : JSON.stringify(response.data);
+  const payload = parseQQMusicJsonp(text);
+  const rawLrc = decodeHtmlEntities(decodeBase64Utf8(payload.lyric));
+  if (!rawLrc) return null;
+
+  const translation = decodeHtmlEntities(decodeBase64Utf8(payload.trans));
+  return translation ? { rawLrc, translation } as any : { rawLrc };
+};
+
 const pluginInstance: IPlugin.IPluginDefine = {
   platform: PLATFORM,
   author: "Ohhu",
-  version: "1.0.0",
+  version: "2.1.2",
   cacheControl: "no-store",
   primaryKey: ["id", "songmid", "source"],
   hints: {
@@ -463,7 +536,8 @@ const pluginInstance: IPlugin.IPluginDefine = {
     importMusicItem: []
   },
   importMusicSheet,
-  getMusicSheetInfo
+  getMusicSheetInfo,
+  getLyric
 };
 
 module.exports = pluginInstance;
