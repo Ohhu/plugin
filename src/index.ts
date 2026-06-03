@@ -13,6 +13,7 @@ import axios from 'axios';
 
 const PLATFORM = "QQ歌单导入";
 const PROVIDER = "qqmusic";
+const SRC_URL = "https://raw.githubusercontent.com/Ohhu/plugin/qq-playlist-importer/dist/QQPlaylistImporter.js";
 const QQ_MUSIC_API_URLS = [
   "https://u6.y.qq.com/cgi-bin/musics.fcg",
   "https://u.y.qq.com/cgi-bin/musics.fcg"
@@ -526,6 +527,7 @@ const pluginInstance: IPlugin.IPluginDefine = {
   platform: PLATFORM,
   author: "Ohhu",
   version: "2.1.2",
+  srcUrl: SRC_URL,
   cacheControl: "no-store",
   primaryKey: ["id", "songmid", "source"],
   hints: {

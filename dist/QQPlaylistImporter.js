@@ -8,6 +8,8 @@ const $882b6d93070905b3$var$PLATFORM = "QQ歌单导入";
 
 const $882b6d93070905b3$var$PROVIDER = "qqmusic";
 
+const $882b6d93070905b3$var$SRC_URL = "https://raw.githubusercontent.com/Ohhu/plugin/qq-playlist-importer/dist/QQPlaylistImporter.js";
+
 const $882b6d93070905b3$var$QQ_MUSIC_API_URLS = [ "https://u6.y.qq.com/cgi-bin/musics.fcg", "https://u.y.qq.com/cgi-bin/musics.fcg" ];
 
 const $882b6d93070905b3$var$QQ_MUSIC_PLATFORMS = [ "-1", "android", "iphone", "h5", "wxfshare", "iphone_wx", "windows" ];
@@ -406,6 +408,7 @@ const $882b6d93070905b3$var$pluginInstance = {
     platform: $882b6d93070905b3$var$PLATFORM,
     author: "Ohhu",
     version: "2.1.2",
+    srcUrl: $882b6d93070905b3$var$SRC_URL,
     cacheControl: "no-store",
     primaryKey: [ "id", "songmid", "source" ],
     hints: {
