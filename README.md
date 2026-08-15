@@ -19,7 +19,23 @@
 
 ### 2. 导入插件
 
-在 MusicFree 中导入 `dist/` 下对应的插件文件（或通过你自己的托管地址导入）。
+**方式一：插件订阅（推荐）**
+
+MusicFree → 设置 → 插件订阅 → 添加订阅，填入下面地址，即可一次性安装全部三个插件，后续在订阅内可统一检查更新：
+
+```text
+https://raw.githubusercontent.com/Ohhu/plugin/ChKSz/dist/ChKSz.json
+```
+
+**方式二：单个插件手动导入**
+
+按需导入 `dist/` 下对应的插件文件（或通过你自己的托管地址导入）：
+
+```text
+https://raw.githubusercontent.com/Ohhu/plugin/ChKSz/dist/ChKSzNetease.js   # ChKSz·网易云
+https://raw.githubusercontent.com/Ohhu/plugin/ChKSz/dist/ChKSzQQ.js        # ChKSz·QQ音乐
+https://raw.githubusercontent.com/Ohhu/plugin/ChKSz/dist/ChKSzKugou.js     # ChKSz·酷狗
+```
 
 ### 3. 填写 API Key
 
@@ -60,7 +76,7 @@ https://music.163.com/#/playlist?id=3778678
 ```bash
 npm install
 npm run typecheck   # tsc --noEmit
-npm run build       # parcel 构建 + terser 美化，产物在 dist/
+npm run build       # parcel 构建 + terser 美化 + 生成订阅 dist/ChKSz.json
 npm run smoke       # 本地 stub axios 的冒烟测试（无网络）
 ```
 
@@ -76,6 +92,8 @@ src/
 ├── ChKSzNetease.ts   # 插件入口：ChKSz·网易云
 ├── ChKSzQQ.ts        # 插件入口：ChKSz·QQ音乐
 └── ChKSzKugou.ts     # 插件入口：ChKSz·酷狗
+scripts/
+└── make_subscription.js  # 构建后生成 MusicFree 插件订阅 dist/ChKSz.json
 ```
 
 ChKSz API 规范快照见 [docs/chksz-api.md](docs/chksz-api.md)。

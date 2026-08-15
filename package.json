@@ -10,8 +10,9 @@
   "main": "dist/ChKSzNetease.js",
   "scripts": {
     "watch": "parcel watch",
-    "build": "parcel build && npm run beautify",
+    "build": "parcel build && npm run beautify && npm run subscribe",
     "beautify": "for f in dist/ChKSz*.js; do terser \"$f\" -o \"$f\" --comments false --format beautify; done",
+    "subscribe": "node scripts/make_subscription.js",
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke_chksz.js"
   },
