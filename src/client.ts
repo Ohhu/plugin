@@ -20,14 +20,28 @@ const CHKSZ_MAX_RETRY_AFTER_SECONDS = 10;
 
 const API_KEY_VARIABLE_NAMES = ["apikey", "apiKey", "key", "API Key"];
 
-export class ChKSzApiError extends Error {
-  readonly status?: number;
+/**
+ * MusicFree 会向插件作用域注入 env（含 getUserVariables / userVariables）。
+ * 老版本 App 不一定把用户变量绑到方法 this 上，这里做双通道读取。
+ */
+declare const env: {
+  getUserVariables?: () => unknown;
+  userVariables?: unknown;
+} | undefined;
 
-  constructor(message: string, status?: number) {
-    super(message);
-    this.name = "ChKSzApiError";
-    this.status = status;
-  }
+export interface ChKSzApiError extends Error {
+  status?: number;
+}
+
+/**
+ * 错误工厂：不用 class extends Error——仓库内已验证可用的插件
+ * 产物均不含 class 语法，严格对齐（老 JS 引擎对内建类继承支持不稳）。
+ */
+export function chkszError(message: string, status?: number): ChKSzApiError {
+  const error = new Error(message) as ChKSzApiError;
+  error.name = "ChKSzApiError";
+  error.status = status;
+  return error;
 }
 
 declare function setTimeout(handler: () => void, timeout: number): unknown;
@@ -39,7 +53,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 function readUserVariables(self?: ChKSzPluginSelf): Record<string, string> {
-  const raw = self?.userVariables;
+  const raw = self ? self.userVariables : undefined;
   if (Array.isArray(raw)) {
     // 用户尚未填写时，MusicFree 可能传入原始声明数组
     const declared: Record<string, string> = {};
@@ -56,16 +70,33 @@ function readUserVariables(self?: ChKSzPluginSelf): Record<string, string> {
   return {};
 }
 
-/** 从插件 this.userVariables 读取用户填写的 API Key，未配置时抛出可读错误 */
-export function getChKSzApiKey(self?: ChKSzPluginSelf): string {
-  const variables = readUserVariables(self);
-  for (const name of API_KEY_VARIABLE_NAMES) {
-    const value = variables[name];
+function pickApiKey(variables: Record<string, string>): string | null {
+  for (let i = 0; i < API_KEY_VARIABLE_NAMES.length; i += 1) {
+    const value = variables[API_KEY_VARIABLE_NAMES[i]];
     if (typeof value === "string" && value.trim()) {
       return value.trim();
     }
   }
-  throw new ChKSzApiError(
+  return null;
+}
+
+/** 从插件 this.userVariables / env 用户变量读取 API Key，未配置时抛出可读错误 */
+export function getChKSzApiKey(self?: ChKSzPluginSelf): string {
+  const fromSelf = pickApiKey(readUserVariables(self));
+  if (fromSelf) {
+    return fromSelf;
+  }
+  try {
+    if (typeof env !== "undefined" && env && typeof env.getUserVariables === "function") {
+      const fromEnv = pickApiKey(readUserVariables({ userVariables: env.getUserVariables() }));
+      if (fromEnv) {
+        return fromEnv;
+      }
+    }
+  } catch (_) {
+    // env 不可用时走统一报错
+  }
+  throw chkszError(
     "尚未配置 ChKSz API Key：请在 MusicFree 的插件设置中填写个人 Key" +
       "（访问 https://api.chksz.com/login 登录后，在账户页复制以 chksz_ 开头的 Key）"
   );
@@ -89,12 +120,16 @@ function buildUrl(path: string, params: ChKSzRequestParams | undefined, apikey: 
   const append = (key: string, value: string): void => {
     query.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
   };
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value === undefined || value === null || value === "") {
-      return;
+  if (params) {
+    const keys = Object.keys(params);
+    for (let i = 0; i < keys.length; i += 1) {
+      const value = params[keys[i]];
+      if (value === undefined || value === null || value === "") {
+        continue;
+      }
+      append(keys[i], String(value));
     }
-    append(key, String(value));
-  });
+  }
   append("apikey", apikey);
   return `${CHKSZ_BASE_URL}${path}?${query.join("&")}`;
 }
@@ -106,7 +141,7 @@ function maskSecret(text: string, secret: string): string {
 function pickDetail(data: unknown): string {
   if (data && typeof data === "object") {
     const source = data as Record<string, unknown>;
-    const message = source.msg ?? source.message ?? source.error;
+    const message = source.msg !== undefined ? source.msg : source.message !== undefined ? source.message : source.error;
     if (typeof message === "string" && message.trim()) {
       return message.trim();
     }
@@ -122,24 +157,24 @@ function toStatusError(status: number, detail: string): ChKSzApiError {
   const suffix = detail ? `：${detail}` : "";
   switch (status) {
     case 400:
-      return new ChKSzApiError(`ChKSz 请求参数错误${suffix}`, status);
+      return chkszError(`ChKSz 请求参数错误${suffix}`, status);
     case 401:
-      return new ChKSzApiError(`ChKSz API Key 无效或登录失效${suffix}，请在插件设置中检查 Key`, status);
+      return chkszError(`ChKSz API Key 无效或登录失效${suffix}，请在插件设置中检查 Key`, status);
     case 402:
-      return new ChKSzApiError(
+      return chkszError(
         "ChKSz 免费和付费额度均已用尽：北京时间次日凌晨重置免费额度，或使用 LDC 兑换付费额度",
         status
       );
     case 403:
-      return new ChKSzApiError(`ChKSz 拒绝访问（用户、Key 或 IP 可能被封禁）${suffix}`, status);
+      return chkszError(`ChKSz 拒绝访问（用户、Key 或 IP 可能被封禁）${suffix}`, status);
     case 404:
-      return new ChKSzApiError(`ChKSz 接口或资源不存在${suffix}`, status);
+      return chkszError(`ChKSz 接口或资源不存在${suffix}`, status);
     case 429:
-      return new ChKSzApiError(`ChKSz 速率限制（每个 Key 每分钟 20 次）${suffix}，请稍后重试`, status);
+      return chkszError(`ChKSz 速率限制（每个 Key 每分钟 20 次）${suffix}，请稍后重试`, status);
     case 503:
-      return new ChKSzApiError(`ChKSz 服务暂不可用或已被管理员停用${suffix}，请稍后重试`, status);
+      return chkszError(`ChKSz 服务暂不可用或已被管理员停用${suffix}，请稍后重试`, status);
     default:
-      return new ChKSzApiError(`ChKSz 请求失败（HTTP ${status}）${suffix}`, status);
+      return chkszError(`ChKSz 请求失败（HTTP ${status}）${suffix}`, status);
   }
 }
 
@@ -155,7 +190,7 @@ function parseRetryAfterSeconds(headerValue: unknown): number | null {
 export async function chkszGet<T = any>(options: ChKSzGetOptions): Promise<T> {
   const apikey = getChKSzApiKey(options.self);
   const url = buildUrl(options.path, options.params, apikey);
-  const timeoutMs = options.timeoutMs ?? CHKSZ_DEFAULT_TIMEOUT_MS;
+  const timeoutMs = options.timeoutMs !== undefined ? options.timeoutMs : CHKSZ_DEFAULT_TIMEOUT_MS;
 
   const requestOnce = async (): Promise<any> => {
     try {
@@ -167,7 +202,7 @@ export async function chkszGet<T = any>(options: ChKSzGetOptions): Promise<T> {
     } catch (error: any) {
       const reason =
         error && typeof error === "object" && typeof error.message === "string" ? error.message : String(error);
-      throw new ChKSzApiError(`ChKSz 网络请求失败：${maskSecret(reason, apikey)}`);
+      throw chkszError(`ChKSz 网络请求失败：${maskSecret(reason, apikey)}`);
     }
   };
 
@@ -175,16 +210,17 @@ export async function chkszGet<T = any>(options: ChKSzGetOptions): Promise<T> {
 
   // 429：按 Retry-After 等待后最多重试一次，等待过久则直接报错交给用户处理
   if (response && response.status === 429) {
-    const retryAfter = parseRetryAfterSeconds(response.headers?.["retry-after"]);
+    const headers = response.headers || {};
+    const retryAfter = parseRetryAfterSeconds(headers["retry-after"]);
     if (retryAfter !== null && retryAfter <= CHKSZ_MAX_RETRY_AFTER_SECONDS) {
       await sleep((retryAfter + 1) * 1000);
       response = await requestOnce();
     }
   }
 
-  const status = response?.status ?? 0;
+  const status = response ? response.status || 0 : 0;
   if (status >= 200 && status < 300) {
-    return (response?.data ?? null) as T;
+    return (response ? response.data : null) as T;
   }
-  throw toStatusError(status, pickDetail(response?.data));
+  throw toStatusError(status, pickDetail(response ? response.data : null));
 }

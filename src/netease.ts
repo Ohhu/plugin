@@ -8,7 +8,7 @@
  * - GET /api/163_playlist?id=
  */
 
-import { CHKSZ_LARGE_TIMEOUT_MS, ChKSzApiError, chkszGet } from "./client";
+import { CHKSZ_LARGE_TIMEOUT_MS, chkszError, chkszGet } from "./client";
 import { ChKSzPluginDefine, ChKSzPluginSelf, ChKSzUserVariableDecl } from "./types";
 import { asRecord, deepFindHttpUrl, findSongList, firstDefined, firstNumber, firstString, joinArtists, toDurationMs } from "./util";
 
@@ -35,16 +35,24 @@ export function mapNeteaseSong(raw: Record<string, any>): IMusic.IMusicItem {
   const album = asRecord(firstDefined(raw.album, raw.al));
   const artists = firstDefined(raw.artists, raw.singers, raw.ar, raw.artist);
   return {
-    id: String(firstDefined(raw.id, raw.songId, raw.song_id, raw.musicId) ?? ""),
-    title: firstString(raw.name, raw.title, raw.songName) ?? "",
-    artist: joinArtists(artists) ?? "",
+    id: String(firstDefined(raw.id, raw.songId, raw.song_id, raw.musicId) || ""),
+    title: firstString(raw.name, raw.title, raw.songName) || "",
+    artist: joinArtists(artists) || "",
     album:
-      (album ? firstString(album.name, album.title) : undefined) ??
-      firstString(raw.albumName, raw.albumname, raw.album) ??
-      "",
-    artwork:
-      (album ? firstString(album.picUrl, album.cover, album.coverImgUrl) : undefined) ??
-      firstString(raw.picUrl, raw.cover, raw.coverImgUrl),
+      firstString(
+        album ? album.name : undefined,
+        album ? album.title : undefined,
+        raw.albumName,
+        raw.albumname,
+        raw.album
+      ) || "",
+    artwork: firstString(
+      album ? album.picUrl : undefined,
+      album ? album.cover : undefined,
+      album ? album.coverImgUrl : undefined,
+      raw.picUrl,
+      raw.cover
+    ),
     duration: toDurationMs(raw.duration, raw.dt, raw.interval),
     platform: NETEASE_PLATFORM,
     source: NETEASE_PLATFORM,
@@ -72,14 +80,18 @@ async function searchNetease(
   const list = findSongList(data);
   const root = asRecord(data) || {};
   const inner = asRecord(root.data) || root;
+  const rootResult = asRecord(root.result);
+  const innerResult = asRecord(inner.result);
   const total = firstNumber(
     root.total,
     root.count,
     root.songCount,
     inner.total,
-    inner.count,
-    asRecord(root.result)?.songCount,
-    asRecord(inner.result)?.songCount
+    firstNumber(
+      inner.count,
+      rootResult ? rootResult.songCount : undefined,
+      innerResult ? innerResult.songCount : undefined
+    )
   );
 
   return {
@@ -102,10 +114,10 @@ async function getNeteaseMediaSource(
   });
 
   const root = asRecord(data);
-  const url =
-    firstString(root?.url, asRecord(root?.data)?.url, deepFindHttpUrl(data));
+  const rootData = asRecord(root ? root.data : undefined);
+  const url = firstString(root ? root.url : undefined, rootData ? rootData.url : undefined, deepFindHttpUrl(data));
   if (!url) {
-    throw new ChKSzApiError("ChKSz 未返回播放地址：歌曲可能无版权或当前音质不可用，可尝试切换音质");
+    throw chkszError("ChKSz 未返回播放地址：歌曲可能无版权或当前音质不可用，可尝试切换音质");
   }
   return { url, quality };
 }
@@ -134,13 +146,13 @@ async function getNeteaseLyric(
   const root = asRecord(data) || {};
   const inner = asRecord(root.data) || root;
   // 原文 > 翻译；罗马音不参与合并，避免时间轴错乱
-  const lrc =
-    lyricTextOf(inner.lrc) ??
-    lyricTextOf(root.lrc) ??
-    lyricTextOf(inner.lyric) ??
-    lyricTextOf(root.lyric) ??
-    lyricTextOf(inner.tlyric) ??
-    lyricTextOf(root.tlyric);
+  const lrc = firstString(
+    lyricTextOf(inner.lrc),
+    lyricTextOf(root.lrc),
+    lyricTextOf(inner.lyric),
+    lyricTextOf(root.lyric),
+    lyricTextOf(inner.tlyric)
+  );
   return lrc ? { lrc } : null;
 }
 
@@ -182,20 +194,24 @@ async function fetchNeteasePlaylist(this: ChKSzPluginSelf, playlistId: string): 
   });
 
   const root = asRecord(data) || {};
+  const rootData = asRecord(root.data);
   const playlist =
-    asRecord(root.playlist) ?? asRecord(asRecord(root.data)?.playlist) ?? asRecord(root.data) ?? root;
+    asRecord(root.playlist) || asRecord(rootData ? rootData.playlist : undefined) || rootData || root;
   const songs = findSongList(playlist).length ? findSongList(playlist) : findSongList(data);
   const creator = asRecord(playlist.creator);
 
   return {
     id: playlistId,
-    title: firstString(playlist.title, playlist.name) ?? "网易云音乐歌单",
-    description: firstString(playlist.description, playlist.desc) ?? "",
+    title: firstString(playlist.title, playlist.name) || "网易云音乐歌单",
+    description: firstString(playlist.description, playlist.desc) || "",
     cover: firstString(playlist.coverImgUrl, playlist.picUrl, playlist.coverImg, playlist.cover, playlist.logo),
-    creator:
-      (creator ? firstString(creator.nickname, creator.name) : undefined) ??
-      firstString(playlist.nickname, playlist.userName, playlist.creator),
-    songCount: firstNumber(playlist.trackCount, playlist.songCount) ?? songs.length,
+    creator: firstString(
+      creator ? creator.nickname : undefined,
+      creator ? creator.name : undefined,
+      playlist.nickname,
+      playlist.userName
+    ),
+    songCount: firstNumber(playlist.trackCount, playlist.songCount) || songs.length,
     songs,
   };
 }
@@ -206,7 +222,7 @@ async function importNeteaseMusicSheet(
 ): Promise<IMusic.IMusicItem[] | null> {
   const playlistId = extractNeteasePlaylistId(urlLike);
   if (!playlistId) {
-    throw new ChKSzApiError("无法识别网易云歌单：请传入 music.163.com 歌单链接或纯数字歌单 ID");
+    throw chkszError("无法识别网易云歌单：请传入 music.163.com 歌单链接或纯数字歌单 ID");
   }
   const playlist = await fetchNeteasePlaylist.call(this, playlistId);
   return playlist.songs.map((item) => mapNeteaseSong(asRecord(item) || {}));
@@ -243,7 +259,7 @@ export function createNeteasePlugin(): ChKSzPluginDefine {
     platform: NETEASE_PLATFORM,
     author: "Ohhu",
     version: "1.0.0",
-    cacheControl: "no-cache",
+    cacheControl: "no-store",
     primaryKey: ["id"],
     supportedSearchType: ["music"],
     hints: {

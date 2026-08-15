@@ -7,7 +7,7 @@
  * 仅支持 GET，无分页；size 使用音乐源原生值，不做别名映射。
  */
 
-import { ChKSzApiError, chkszGet } from "./client";
+import { chkszError, chkszGet } from "./client";
 import { ChKSzPluginDefine, ChKSzPluginSelf, ChKSzUserVariableDecl } from "./types";
 import { asRecord, deepFindHttpUrl, firstDefined, firstString, joinArtists, toDurationMs } from "./util";
 
@@ -42,10 +42,10 @@ const USER_VARIABLES: ChKSzUserVariableDecl[] = [
 
 function mapPointSongItem(options: PointSongBackendOptions, raw: Record<string, any>, keyword: string): IMusic.IMusicItem {
   const item: IMusic.IMusicItem = {
-    id: String(firstDefined(raw.mid, raw.id, raw.hash, raw.n) ?? ""),
-    title: firstString(raw.name, raw.title, raw.songName) ?? "",
-    artist: joinArtists(raw.singer, raw.singers, raw.artist) ?? "",
-    album: firstString(raw.album, raw.albumName, raw.albumname) ?? "",
+    id: String(firstDefined(raw.mid, raw.id, raw.hash, raw.n) || ""),
+    title: firstString(raw.name, raw.title, raw.songName) || "",
+    artist: joinArtists(raw.singer, raw.singers, raw.artist) || "",
+    album: firstString(raw.album, raw.albumName, raw.albumname) || "",
     duration: toDurationMs(raw.duration, raw.interval),
     platform: options.platform,
     source: options.platform,
@@ -53,7 +53,7 @@ function mapPointSongItem(options: PointSongBackendOptions, raw: Record<string, 
     keyword,
   };
   if (options.idParam === "mid") {
-    item.mid = String(firstDefined(raw.mid, raw.songmid, raw.id) ?? "");
+    item.mid = String(firstDefined(raw.mid, raw.songmid, raw.id) || "");
   }
   return item;
 }
@@ -85,10 +85,11 @@ function createPointSongPlugin(options: PointSongBackendOptions): ChKSzPluginDef
     });
 
     const root = asRecord(data);
-    const list = Array.isArray(root?.list)
+    const rootData = asRecord(root ? root.data : undefined);
+    const list = Array.isArray(root && root.list)
       ? root.list
-      : Array.isArray(asRecord(root?.data)?.list)
-        ? asRecord(root.data).list
+      : Array.isArray(rootData && rootData.list)
+        ? rootData.list
         : [];
     return {
       isEnd: true,
@@ -100,7 +101,7 @@ function createPointSongPlugin(options: PointSongBackendOptions): ChKSzPluginDef
     const record = asRecord(musicItem) || {};
     const keyword = firstString(
       record.keyword,
-      `${firstString(record.title) ?? ""} ${firstString(record.artist) ?? ""}`.trim()
+      `${firstString(record.title) || ""} ${firstString(record.artist) || ""}`.trim()
     );
     const directId = firstString(
       record[options.idParam],
@@ -119,7 +120,7 @@ function createPointSongPlugin(options: PointSongBackendOptions): ChKSzPluginDef
       params.size = size;
     }
     if (!keyword && !directId) {
-      throw new ChKSzApiError("缺少歌曲标识（mid/id）与关键词，无法解析歌曲");
+      throw chkszError("缺少歌曲标识（mid/id）与关键词，无法解析歌曲");
     }
 
     const data = await chkszGet({ path: options.endpoint, params, self });
@@ -134,9 +135,10 @@ function createPointSongPlugin(options: PointSongBackendOptions): ChKSzPluginDef
     const size = SIZE_BY_QUALITY[quality] || "flac";
     const detail = await fetchDetail(this, musicItem, size);
 
-    const url = firstString(detail.url, asRecord(detail.data)?.url, deepFindHttpUrl(detail));
+    const detailData = asRecord(detail.data);
+    const url = firstString(detail.url, detailData ? detailData.url : undefined, deepFindHttpUrl(detail));
     if (!url) {
-      throw new ChKSzApiError("ChKSz 未返回播放地址：歌曲可能无版权或当前音质不可用，可尝试切换音质");
+      throw chkszError("ChKSz 未返回播放地址：歌曲可能无版权或当前音质不可用，可尝试切换音质");
     }
     return { url, quality };
   }
@@ -146,7 +148,8 @@ function createPointSongPlugin(options: PointSongBackendOptions): ChKSzPluginDef
     musicItem: IMusic.IMusicItemPartial
   ): Promise<ILyric.ILyricSource | null> {
     const detail = await fetchDetail(this, musicItem);
-    const lrc = firstString(detail.lrc, asRecord(detail.data)?.lrc);
+    const detailData = asRecord(detail.data);
+    const lrc = firstString(detail.lrc, detailData ? detailData.lrc : undefined);
     return lrc ? { lrc } : null;
   }
 
@@ -154,7 +157,7 @@ function createPointSongPlugin(options: PointSongBackendOptions): ChKSzPluginDef
     platform: options.platform,
     author: "Ohhu",
     version: "1.0.0",
-    cacheControl: "no-cache",
+    cacheControl: "no-store",
     primaryKey: [options.idParam],
     supportedSearchType: ["music"],
     hints: {
