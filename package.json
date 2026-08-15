@@ -11,7 +11,7 @@
   "scripts": {
     "watch": "parcel watch",
     "build": "parcel build && npm run beautify && npm run subscribe",
-    "beautify": "for f in dist/ChKSz*.js; do terser \"$f\" -o \"$f\" --comments false --format beautify; done",
+    "beautify": "for f in dist/*.js; do terser \"$f\" -o \"$f\" --comments false --format beautify; done",
     "subscribe": "node scripts/make_subscription.js",
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke_chksz.js"
@@ -63,6 +63,33 @@
       "isLibrary": true,
       "outputFormat": "commonjs",
       "distDir": "dist",
+      "engines": {
+        "browsers": ["android >= 6", "ios >= 12", "chrome >= 60"]
+      },
+      "includeNodeModules": {
+        "axios": false
+      }
+    },
+    "T2-axios": {
+      "source": "src/test/T2-axios.ts",
+      "isLibrary": true,
+      "outputFormat": "commonjs",
+      "distDir": "dist",
+      "engines": {
+        "browsers": ["android >= 6", "ios >= 12", "chrome >= 60"]
+      },
+      "includeNodeModules": {
+        "axios": false
+      }
+    },
+    "T3-nouser": {
+      "source": "src/test/T3-nouser.ts",
+      "isLibrary": true,
+      "outputFormat": "commonjs",
+      "distDir": "dist",
+      "engines": {
+        "browsers": ["android >= 6", "ios >= 12", "chrome >= 60"]
+      },
       "includeNodeModules": {
         "axios": false
       }
