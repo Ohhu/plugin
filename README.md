@@ -1,103 +1,86 @@
-# QQ 音乐歌单导入插件
+# ChKSz 音源插件（MusicFree）
 
-这是一个 MusicFree **QQ 音乐歌单导入专用插件**。
+接入 [ChKSz API](https://api.chksz.com) 的 MusicFree 音源插件，一个 Key 覆盖三个音源：
 
-插件只负责解析 QQ 音乐歌单链接并导入歌曲列表，不提供搜索、歌词、歌曲详情或播放解析能力。播放请在 MusicFree 应用内使用“音源重定向”交给其他可播放的 QQ 音源插件。
+| 插件文件 | 音源名 | 能力 |
+| --- | --- | --- |
+| `dist/ChKSzNetease.js` | `ChKSz·网易云` | 搜索、播放解析、歌词、歌单导入 |
+| `dist/ChKSzQQ.js` | `ChKSz·QQ音乐` | 搜索、播放解析、歌词 |
+| `dist/ChKSzKugou.js` | `ChKSz·酷狗` | 搜索、播放解析、歌词 |
 
-## 功能
-
-- 导入 QQ 音乐歌单
-- 获取歌单分页歌曲列表
-- 直连 QQ 音乐 `musics.fcg` 接口获取完整歌单
-- 输出兼容 QQ 解析插件的歌曲字段：
-  - `id`
-  - `songmid`
-  - `albumid`
-  - `albummid`
-  - `title`
-  - `artist`
-  - `album`
-  - `artwork`
-
-## 不负责的能力
-
-- 搜索歌曲
-- 获取播放直链
-- 获取歌词
-- 获取歌曲详情
-- 获取专辑 / 歌手 / 排行榜
-
-这些能力请交给 MusicFree 的其他音源插件处理。
-
-## 支持的歌单链接
-
-支持纯歌单 ID 和常见 QQ 音乐分享链接，例如：
-
-```text
-9629884311
-https://y.qq.com/n/ryqq/playlist/9629884311
-https://i.y.qq.com/n2/m/share/details/taoge.html?id=9629884311
-https://i2.y.qq.com/n3/other/pages/details/playlist.html?...&id=9629884311
-```
+三个插件相互独立，可按需导入；同时启用后在 MusicFree「聚合搜索」中可一并命中。
 
 ## 使用方式
 
-### 1. 导入插件
+### 1. 获取 ChKSz API Key
 
-复制下面的链接，在 MusicFree 中导入插件：
+1. 访问 <https://api.chksz.com/login>，使用邮箱或 LinuxDo 登录；
+2. 在账户页复制以 `chksz_` 开头的个人 API Key。
+
+### 2. 导入插件
+
+在 MusicFree 中导入 `dist/` 下对应的插件文件（或通过你自己的托管地址导入）。
+
+### 3. 填写 API Key
+
+MusicFree → 设置 → 插件管理 → 对应插件 → 用户变量，填写 `ChKSz API Key`。
+**每个插件都需要各填一次**（Key 相同）。
+
+未填写 Key 时调用会得到明确的配置指引；Key 只随请求发送给 `api.chksz.com`，不会出现在错误信息或日志里。
+
+## 音质映射
+
+MusicFree 的四档音质映射到 ChKSz 的服务端原生值（服务端不做别名/降级映射）：
+
+| MusicFree | 网易云 `level` | QQ / 酷狗 `size` |
+| --- | --- | --- |
+| `low` | `standard` | `128k` |
+| `standard` | `exhigh` | `320k` |
+| `high` | `lossless` | `flac` |
+| `super` | `jymaster` | `master` |
+
+## 网易云歌单导入
+
+`ChKSz·网易云` 支持导入网易云歌单，支持纯歌单 ID 和常见链接形式：
 
 ```text
-https://raw.githubusercontent.com/Ohhu/plugin/qq-playlist-importer/dist/QQPlaylistImporter.js
+3778678
+https://music.163.com/#/playlist?id=3778678
 ```
 
-插件平台名：
+## 限额与错误行为
 
-```text
-QQ歌单导入
-```
+- 默认速率限制：每个 Key 每分钟 20 次；免费额度每账户每日 50 次（北京时间次日凌晨重置），1 LDC 可兑换 10 次付费请求。
+- `429` 时若 `Retry-After` ≤ 10 秒，插件会等待后重试一次；否则直接提示稍后再试。
+- `401 / 402 / 403 / 503` 等错误会转述为可读的中文提示（检查 Key、等待额度重置、兑换 LDC、稍后重试等），不会无限重试。
+- 每次搜索、解析、歌词、歌单请求各消耗一次额度，请按需使用。
 
-### 2. 配置音源重定向
-
-本插件不解析播放地址。请在 MusicFree 应用内把：
-
-```text
-QQ歌单导入
-```
-
-重定向到你正在使用的可播放 QQ 音源插件。
-
-例如，如果目标播放插件的平台名是：
-
-```text
-元力QQ
-```
-
-则在 MusicFree 中配置：
-
-```text
-QQ歌单导入 -> 元力QQ
-```
-
-重定向配置在应用里完成，插件代码不会硬编码任何第三方播放源。
-
-## 构建
+## 开发
 
 ```bash
 npm install
-npm run build
+npm run typecheck   # tsc --noEmit
+npm run build       # parcel 构建 + terser 美化，产物在 dist/
+npm run smoke       # 本地 stub axios 的冒烟测试（无网络）
 ```
 
-构建产物：
-
-```text
-dist/QQPlaylistImporter.js
-```
-
-## 项目结构
+源码结构：
 
 ```text
 src/
-└── index.ts       # MusicFree 歌单导入插件入口与 QQ 歌单直连逻辑
-types/             # MusicFree 类型声明
-docs/              # API 实测记录与文档
+├── types.ts          # MusicFree 类型补充（userVariables 等）
+├── client.ts         # 请求核心：apikey、超时、错误映射、429 重试、Key 脱敏
+├── util.ts           # 宽松取值工具（163 系列响应 schema 未严格约定）
+├── netease.ts        # 网易云后端（搜索/解析/歌词/歌单）
+├── pointsong.ts      # QQ / 酷狗点歌后端（同形态接口的通用实现）
+├── ChKSzNetease.ts   # 插件入口：ChKSz·网易云
+├── ChKSzQQ.ts        # 插件入口：ChKSz·QQ音乐
+└── ChKSzKugou.ts     # 插件入口：ChKSz·酷狗
 ```
+
+ChKSz API 规范快照见 [docs/chksz-api.md](docs/chksz-api.md)。
+
+## 相关分支
+
+- `qq-playlist-importer`：QQ 音乐歌单导入插件（仅导入，播放靠音源重定向）
+- `ChKSz`：本分支，ChKSz API 三音源插件

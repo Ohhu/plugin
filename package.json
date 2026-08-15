@@ -1,19 +1,28 @@
 {
-  "name": "qqmusic-playlist-importer-plugin",
-  "version": "2.1.1",
-  "description": "QQ 音乐歌单导入插件 - 仅导入歌单，播放交给 MusicFree 音源重定向",
-  "source": "src/index.ts",
-  "main": "dist/QQPlaylistImporter.js",
+  "name": "chksz-musicfree-plugins",
+  "version": "1.0.0",
+  "description": "ChKSz API MusicFree 音源插件（网易云 / QQ 音乐 / 酷狗）",
+  "source": [
+    "src/ChKSzNetease.ts",
+    "src/ChKSzQQ.ts",
+    "src/ChKSzKugou.ts"
+  ],
+  "main": "dist/ChKSzNetease.js",
   "scripts": {
     "watch": "parcel watch",
-    "build": "parcel build && terser dist/QQPlaylistImporter.js -o dist/QQPlaylistImporter.js --comments false --format beautify"
+    "build": "parcel build && npm run beautify",
+    "beautify": "for f in dist/ChKSz*.js; do terser \"$f\" -o \"$f\" --comments false --format beautify; done",
+    "typecheck": "tsc --noEmit",
+    "smoke": "node scripts/smoke_chksz.js"
   },
   "keywords": [
     "musicfree",
     "plugin",
     "music",
+    "chksz",
+    "netease",
     "qqmusic",
-    "qq"
+    "kugou"
   ],
   "author": {
     "name": "Ohhu",
@@ -29,8 +38,30 @@
     "terser": "^5.37.0",
     "typescript": "^5.1.6"
   },
-  "target": {
-    "main": {
+  "targets": {
+    "ChKSzNetease": {
+      "source": "src/ChKSzNetease.ts",
+      "isLibrary": true,
+      "outputFormat": "commonjs",
+      "distDir": "dist",
+      "includeNodeModules": {
+        "axios": false
+      }
+    },
+    "ChKSzQQ": {
+      "source": "src/ChKSzQQ.ts",
+      "isLibrary": true,
+      "outputFormat": "commonjs",
+      "distDir": "dist",
+      "includeNodeModules": {
+        "axios": false
+      }
+    },
+    "ChKSzKugou": {
+      "source": "src/ChKSzKugou.ts",
+      "isLibrary": true,
+      "outputFormat": "commonjs",
+      "distDir": "dist",
       "includeNodeModules": {
         "axios": false
       }
