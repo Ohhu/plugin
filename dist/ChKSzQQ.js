@@ -389,7 +389,8 @@ function $eb463bb9be5279f7$var$createPointSongPlugin(options) {
     return {
         platform: options.platform,
         author: "Ohhu",
-        version: "1.0.0",
+        version: "1.0.2",
+        srcUrl: options.srcUrl,
         cacheControl: "no-store",
         primaryKey: [ options.idParam ],
         supportedSearchType: [ "music" ],
@@ -409,7 +410,8 @@ function $eb463bb9be5279f7$export$2ef6d92eb854799e() {
         platform: "ChKSz·QQ音乐",
         endpoint: "/api/qq_music",
         idParam: "mid",
-        searchLimitParam: "num"
+        searchLimitParam: "num",
+        srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.2/dist/ChKSzQQ.js"
     });
 }
 
@@ -417,7 +419,8 @@ function $eb463bb9be5279f7$export$eaa44ae5e5e89012() {
     return $eb463bb9be5279f7$var$createPointSongPlugin({
         platform: "ChKSz·酷狗",
         endpoint: "/api/kugou_music",
-        idParam: "id"
+        idParam: "id",
+        srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.2/dist/ChKSzKugou.js"
     });
 }
 

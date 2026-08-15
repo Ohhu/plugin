@@ -30,6 +30,8 @@ export interface PointSongBackendOptions {
   idParam: "mid" | "id";
   /** 搜索数量参数名（QQ 支持 num/g，酷狗文档未提供） */
   searchLimitParam?: "num" | "g";
+  /** 插件更新地址（App 内检查更新用） */
+  srcUrl?: string;
 }
 
 const USER_VARIABLES: ChKSzUserVariableDecl[] = [
@@ -156,7 +158,8 @@ function createPointSongPlugin(options: PointSongBackendOptions): ChKSzPluginDef
   return {
     platform: options.platform,
     author: "Ohhu",
-    version: "1.0.0",
+    version: "1.0.2",
+    srcUrl: options.srcUrl,
     cacheControl: "no-store",
     primaryKey: [options.idParam],
     supportedSearchType: ["music"],
@@ -178,6 +181,7 @@ export function createQQPlugin(): ChKSzPluginDefine {
     endpoint: "/api/qq_music",
     idParam: "mid",
     searchLimitParam: "num",
+    srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.2/dist/ChKSzQQ.js",
   });
 }
 
@@ -187,5 +191,6 @@ export function createKugouPlugin(): ChKSzPluginDefine {
     platform: "ChKSz·酷狗",
     endpoint: "/api/kugou_music",
     idParam: "id",
+    srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.2/dist/ChKSzKugou.js",
   });
 }

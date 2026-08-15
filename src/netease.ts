@@ -258,7 +258,8 @@ export function createNeteasePlugin(): ChKSzPluginDefine {
   return {
     platform: NETEASE_PLATFORM,
     author: "Ohhu",
-    version: "1.0.0",
+    version: "1.0.2",
+    srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.2/dist/ChKSzNetease.js",
     cacheControl: "no-store",
     primaryKey: ["id"],
     supportedSearchType: ["music"],
