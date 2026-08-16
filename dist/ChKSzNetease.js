@@ -133,7 +133,7 @@ async function $a6afe7b81da5ac04$export$ad90614321195e52(options) {
     const apikey = $a6afe7b81da5ac04$export$d2f6112f5650928(options.self);
     const url = $a6afe7b81da5ac04$var$buildUrl(options.path, options.params, apikey);
     const timeoutMs = options.timeoutMs !== undefined ? options.timeoutMs : $a6afe7b81da5ac04$export$94bbe8f22941309c;
-    const requestOnce = async () => {
+    const requestOnce = async function() {
         try {
             return await (0, $parcel$interopDefault($gjr1N$axios)).get(url, {
                 timeout: timeoutMs,
@@ -470,8 +470,8 @@ function $7f28772cb2d30742$export$db196fef1ba941f3() {
     return {
         platform: $7f28772cb2d30742$export$fb4417ed62a774fb,
         author: "Ohhu",
-        version: "1.0.2",
-        srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.2/dist/ChKSzNetease.js",
+        version: "1.0.3",
+        srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.3/dist/ChKSzNetease.js",
         cacheControl: "no-store",
         primaryKey: [ "id" ],
         supportedSearchType: [ "music" ],

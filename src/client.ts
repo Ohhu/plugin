@@ -192,7 +192,9 @@ export async function chkszGet<T = any>(options: ChKSzGetOptions): Promise<T> {
   const url = buildUrl(options.path, options.params, apikey);
   const timeoutMs = options.timeoutMs !== undefined ? options.timeoutMs : CHKSZ_DEFAULT_TIMEOUT_MS;
 
-  const requestOnce = async (): Promise<any> => {
+  // 注意：不能用 async 箭头函数——Hermes 的 Function() 动态求值不支持 async 箭头
+  // （报 "async functions are unsupported"，App 端即「插件无法解析」）。
+  const requestOnce = async function (): Promise<any> {
     try {
       return await axios.get(url, {
         timeout: timeoutMs,

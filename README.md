@@ -29,12 +29,12 @@ https://cdn.jsdelivr.net/gh/Ohhu/plugin@ChKSz/dist/ChKSz.json
 
 **方式二：单个插件手动导入**
 
-MusicFree → 设置 → 插件管理 → 右上角菜单 → 从网络安装，按需粘贴（`chksz-v1.0.2` 为版本锁定地址，永不缓存过期）：
+MusicFree → 设置 → 插件管理 → 右上角菜单 → 从网络安装，按需粘贴（`chksz-v1.0.3` 为版本锁定地址，永不缓存过期）：
 
 ```text
-https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.2/dist/ChKSzNetease.js   # ChKSz·网易云
-https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.2/dist/ChKSzQQ.js        # ChKSz·QQ音乐
-https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.2/dist/ChKSzKugou.js     # ChKSz·酷狗
+https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.3/dist/ChKSzNetease.js   # ChKSz·网易云
+https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.3/dist/ChKSzQQ.js        # ChKSz·QQ音乐
+https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.3/dist/ChKSzKugou.js     # ChKSz·酷狗
 ```
 
 ### 3. 填写 API Key

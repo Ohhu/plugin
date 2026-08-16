@@ -158,7 +158,7 @@ function createPointSongPlugin(options: PointSongBackendOptions): ChKSzPluginDef
   return {
     platform: options.platform,
     author: "Ohhu",
-    version: "1.0.2",
+    version: "1.0.3",
     srcUrl: options.srcUrl,
     cacheControl: "no-store",
     primaryKey: [options.idParam],
@@ -181,7 +181,7 @@ export function createQQPlugin(): ChKSzPluginDefine {
     endpoint: "/api/qq_music",
     idParam: "mid",
     searchLimitParam: "num",
-    srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.2/dist/ChKSzQQ.js",
+    srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.3/dist/ChKSzQQ.js",
   });
 }
 
@@ -191,6 +191,6 @@ export function createKugouPlugin(): ChKSzPluginDefine {
     platform: "ChKSz·酷狗",
     endpoint: "/api/kugou_music",
     idParam: "id",
-    srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.2/dist/ChKSzKugou.js",
+    srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.3/dist/ChKSzKugou.js",
   });
 }

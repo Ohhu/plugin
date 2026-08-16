@@ -133,7 +133,7 @@ async function $a6afe7b81da5ac04$export$ad90614321195e52(options) {
     const apikey = $a6afe7b81da5ac04$export$d2f6112f5650928(options.self);
     const url = $a6afe7b81da5ac04$var$buildUrl(options.path, options.params, apikey);
     const timeoutMs = options.timeoutMs !== undefined ? options.timeoutMs : $a6afe7b81da5ac04$export$94bbe8f22941309c;
-    const requestOnce = async () => {
+    const requestOnce = async function() {
         try {
             return await (0, $parcel$interopDefault($g8oBv$axios)).get(url, {
                 timeout: timeoutMs,
@@ -389,7 +389,7 @@ function $eb463bb9be5279f7$var$createPointSongPlugin(options) {
     return {
         platform: options.platform,
         author: "Ohhu",
-        version: "1.0.2",
+        version: "1.0.3",
         srcUrl: options.srcUrl,
         cacheControl: "no-store",
         primaryKey: [ options.idParam ],
@@ -411,7 +411,7 @@ function $eb463bb9be5279f7$export$2ef6d92eb854799e() {
         endpoint: "/api/qq_music",
         idParam: "mid",
         searchLimitParam: "num",
-        srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.2/dist/ChKSzQQ.js"
+        srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.3/dist/ChKSzQQ.js"
     });
 }
 
@@ -420,7 +420,7 @@ function $eb463bb9be5279f7$export$eaa44ae5e5e89012() {
         platform: "ChKSz·酷狗",
         endpoint: "/api/kugou_music",
         idParam: "id",
-        srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.2/dist/ChKSzKugou.js"
+        srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.3/dist/ChKSzKugou.js"
     });
 }
 
