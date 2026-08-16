@@ -3,17 +3,17 @@
         {
             "name": "ChKSz·网易云",
             "version": "1.0.4",
-            "url": "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.4/dist/ChKSzNetease.js"
+            "url": "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.4/dist/ChKSzNetease.js"
         },
         {
             "name": "ChKSz·QQ音乐",
             "version": "1.0.4",
-            "url": "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.4/dist/ChKSzQQ.js"
+            "url": "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.4/dist/ChKSzQQ.js"
         },
         {
             "name": "ChKSz·酷狗",
             "version": "1.0.4",
-            "url": "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.4/dist/ChKSzKugou.js"
+            "url": "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.4/dist/ChKSzKugou.js"
         }
     ]
 }

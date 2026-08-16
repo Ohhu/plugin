@@ -474,7 +474,7 @@ function $7f28772cb2d30742$export$db196fef1ba941f3() {
         platform: $7f28772cb2d30742$export$fb4417ed62a774fb,
         author: "Ohhu",
         version: "1.0.4",
-        srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.4/dist/ChKSzNetease.js",
+        srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.4/dist/ChKSzNetease.js",
         cacheControl: "no-store",
         primaryKey: [ "id" ],
         supportedSearchType: [ "music" ],

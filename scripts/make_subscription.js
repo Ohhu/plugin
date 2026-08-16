@@ -4,14 +4,14 @@
  * 订阅格式：{ plugins: [{ name, version, url }] }
  * name/version 从各产物运行时读取（即插件 platform/version）。
  *
- * 插件文件地址：git tag 锁定的 jsDelivr 直链（chksz-v<版本>）。
- * - raw.githubusercontent.com 大陆常被阻断/劫持；
- * - jsdelivr 分支引用（@ChKSz）在多边缘节点间会新旧行 flipping（已复现）；
- * - tag 内容寻址永不 stale；但 tag 只能一次性使用——删除后重打同名 tag，
- *   CDN 会残留被删 tag 的历史缓存（已复现），因此版本号只增、tag 永不复用。
+ * 插件文件地址：git tag 锁定的 raw.githubusercontent.com 直链（chksz-v<版本>）。
+ * - 一律走 raw（origin 直连），不经过 CDN——用户反馈 jsdelivr 更新不及时；
+ *   raw 的 Cache-Control 仅 max-age=300，push 后最多 5 分钟生效，无需 purge；
+ * - tag 内容不可变，不存在缓存 stale；tag 只能一次性使用，版本号只增、tag 永不复用；
+ * - 注意：raw.githubusercontent.com 在部分大陆网络环境下可能不可达（历史上因此用过
+ *   jsdelivr，v1.0.4 起按用户要求切回 raw）；临时换基座可用环境变量 CHKSZ_PLUGIN_BASE。
  *
- * 发布流程：升版本 → npm run build → 提交 → 打 tag chksz-v<版本> →
- * push 分支与 tag → purge 订阅 JSON 与各插件文件。
+ * 发布流程：升版本 → npm run build → 提交 → 打 tag chksz-v<版本> → push 分支与 tag。
  *
  * 运行：npm run subscribe（npm run build 会自动执行，需先构建产物）
  */
@@ -23,7 +23,7 @@ const path = require("path");
 function pluginBaseFor(version) {
   return (
     process.env.CHKSZ_PLUGIN_BASE ||
-    `https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v${version}/dist`
+    `https://raw.githubusercontent.com/Ohhu/plugin/chksz-v${version}/dist`
   );
 }
 
