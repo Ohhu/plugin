@@ -307,9 +307,13 @@ async function fetchSheetPage(disstid: string, songBegin: number, songNum: numbe
   throw lastError || new Error("QQ音乐歌单请求全部失败");
 }
 
-/** QQ 专辑封面（导入即有封面，无需等播放回填） */
+/**
+ * QQ 专辑封面（导入即有封面，无需等播放回填）。
+ * 注意：参考实现的 `…M000{pmid}_5.jpg` 带尾缀且用 y.qq.com 域——实测 404（封面全挂），
+ * 正确形态是 y.gtimg.cn 域、无尾缀：`…M000{pmid}.jpg`（多专辑实测 200）。
+ */
 function qqAlbumCover(albumMid: string): string | undefined {
-  return albumMid ? "https://y.qq.com/music/photo_new/T002R300x300M000" + albumMid + "_5.jpg" : undefined;
+  return albumMid ? "https://y.gtimg.cn/music/photo_new/T002R300x300M000" + albumMid + ".jpg" : undefined;
 }
 
 /** 网易歌曲 → `ChKSz·QQ音乐` 条目：mid 主键 + 关键词兜底，播放走 ChKSz mid 直解 */

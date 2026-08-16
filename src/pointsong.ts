@@ -260,7 +260,7 @@ function createPointSongPlugin(options: PointSongBackendOptions): ChKSzPluginDef
   return {
     platform: options.platform,
     author: "Ohhu",
-    version: "1.0.7",
+    version: "1.0.8",
     srcUrl: options.srcUrl,
     cacheControl: "no-store",
     primaryKey: [options.idParam],

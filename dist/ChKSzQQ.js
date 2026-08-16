@@ -440,7 +440,7 @@ function $eb463bb9be5279f7$var$createPointSongPlugin(options) {
     return {
         platform: options.platform,
         author: "Ohhu",
-        version: "1.0.7",
+        version: "1.0.8",
         srcUrl: options.srcUrl,
         cacheControl: "no-store",
         primaryKey: [ options.idParam ],
@@ -729,7 +729,7 @@ async function $df22fc6da2618097$var$fetchSheetPage(disstid, songBegin, songNum)
 }
 
 function $df22fc6da2618097$var$qqAlbumCover(albumMid) {
-    return albumMid ? "https://y.qq.com/music/photo_new/T002R300x300M000" + albumMid + "_5.jpg" : undefined;
+    return albumMid ? "https://y.gtimg.cn/music/photo_new/T002R300x300M000" + albumMid + ".jpg" : undefined;
 }
 
 function $df22fc6da2618097$var$mapSheetSong(song) {

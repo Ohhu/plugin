@@ -2,17 +2,17 @@
     "plugins": [
         {
             "name": "ChKSz·网易云",
-            "version": "1.0.7",
+            "version": "1.0.8",
             "url": "https://raw.githubusercontent.com/Ohhu/plugin/ChKSz/dist/ChKSzNetease.js"
         },
         {
             "name": "ChKSz·QQ音乐",
-            "version": "1.0.7",
+            "version": "1.0.8",
             "url": "https://raw.githubusercontent.com/Ohhu/plugin/ChKSz/dist/ChKSzQQ.js"
         },
         {
             "name": "ChKSz·酷狗",
-            "version": "1.0.7",
+            "version": "1.0.8",
             "url": "https://raw.githubusercontent.com/Ohhu/plugin/ChKSz/dist/ChKSzKugou.js"
         }
     ]

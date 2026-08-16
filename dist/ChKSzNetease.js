@@ -474,7 +474,7 @@ function $7f28772cb2d30742$export$db196fef1ba941f3() {
     return {
         platform: $7f28772cb2d30742$export$fb4417ed62a774fb,
         author: "Ohhu",
-        version: "1.0.7",
+        version: "1.0.8",
         srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/ChKSz/dist/ChKSzNetease.js",
         cacheControl: "no-store",
         primaryKey: [ "id" ],

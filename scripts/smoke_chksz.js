@@ -340,10 +340,10 @@ async function main() {
     assert.strictEqual(items[0].id, "001QJyJ32zybEe");
     assert.strictEqual(items[0].mid, "001QJyJ32zybEe");
     assert.strictEqual(items[0].platform, "ChKSz·QQ音乐");
-    assert.strictEqual(items[0].artwork, "https://y.qq.com/music/photo_new/T002R300x300M0000049MVh824D7bM_1_5.jpg");
+    assert.strictEqual(items[0].artwork, "https://y.gtimg.cn/music/photo_new/T002R300x300M0000049MVh824D7bM_1.jpg");
     assert.strictEqual(items[0].duration, 235000);
     assert.strictEqual(items[0].keyword, "句号 G.E.M. 邓紫棋");
-    assert.strictEqual(items[1].artwork, "https://y.qq.com/music/photo_new/T002R300x300M000albB_5.jpg");
+    assert.strictEqual(items[1].artwork, "https://y.gtimg.cn/music/photo_new/T002R300x300M000albB.jpg");
     // 请求带 sign 且 body 含歌单 ID 与分页参数
     assert.ok(calls[0].url.indexOf("sign=zzb") >= 0);
     assert.ok(JSON.parse(calls[0].body).req_0.param.disstid === 7365161512);
