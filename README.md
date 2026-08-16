@@ -21,7 +21,7 @@
 
 **方式一：插件订阅（推荐）**
 
-MusicFree → 设置 → 插件管理 → 右上角菜单 → 订阅设置 → 添加订阅，填入下面地址；然后在插件列表右上角菜单点「更新订阅」即可一次性安装全部三个插件（直连 GitHub 原始文件，不经过 CDN，发布后最多约 5 分钟可见）：
+MusicFree → 设置 → 插件管理 → 右上角菜单 → 订阅设置 → 添加订阅，填入下面地址；然后在插件列表右上角菜单点「更新订阅」即可一次性安装全部三个插件（直连 GitHub 原始文件，不经过 CDN，发布后最多约 5 分钟可见）。日常升级用「更新订阅」或各插件的「更新插件」均可：
 
 ```text
 https://raw.githubusercontent.com/Ohhu/plugin/ChKSz/dist/ChKSz.json
@@ -29,13 +29,15 @@ https://raw.githubusercontent.com/Ohhu/plugin/ChKSz/dist/ChKSz.json
 
 **方式二：单个插件手动导入**
 
-MusicFree → 设置 → 插件管理 → 右上角菜单 → 从网络安装，按需粘贴（`chksz-v1.0.6` 为 git tag 锁定地址，内容不可变；直连 GitHub 原始文件，不经过 CDN）：
+MusicFree → 设置 → 插件管理 → 右上角菜单 → 从网络安装，按需粘贴（分支地址，内容随发版更新；直连 GitHub 原始文件，不经过 CDN。之后可直接用插件菜单的「更新插件」升级，无需重新粘贴）：
 
 ```text
-https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.6/dist/ChKSzNetease.js   # ChKSz·网易云
-https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.6/dist/ChKSzQQ.js        # ChKSz·QQ音乐
-https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.6/dist/ChKSzKugou.js     # ChKSz·酷狗
+https://raw.githubusercontent.com/Ohhu/plugin/ChKSz/dist/ChKSzNetease.js   # ChKSz·网易云
+https://raw.githubusercontent.com/Ohhu/plugin/ChKSz/dist/ChKSzQQ.js        # ChKSz·QQ音乐
+https://raw.githubusercontent.com/Ohhu/plugin/ChKSz/dist/ChKSzKugou.js     # ChKSz·酷狗
 ```
+
+> **从 v1.0.6 及之前升级的用户**：旧版插件的更新地址指向版本锁定的 tag（内容不可变，「更新插件」无效）。请先点一次「更新订阅」升到 v1.0.7，此后「更新插件」即可直接生效。
 
 ### 3. 填写 API Key
 
