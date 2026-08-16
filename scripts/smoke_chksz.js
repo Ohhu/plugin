@@ -17,6 +17,7 @@ const APIKEY = "chksz_test_key_123";
 
 let calls = [];
 let responder = null;
+let postResponder = null;
 
 const axiosStub = {
   get(url, config) {
@@ -33,6 +34,18 @@ const axiosStub = {
       data: result.data,
       headers: result.headers || {},
     });
+  },
+  post(url, body, config) {
+    calls.push({ url, body, config });
+    const result = postResponder ? postResponder(url, body, calls.length) : null;
+    if (!result) {
+      return Promise.resolve({ status: 200, data: {}, headers: {} });
+    }
+    if (result.reject) {
+      return Promise.reject(new Error(result.rejectMessage || "Network Error"));
+    }
+    // qqsheet 用 responseType:text + transformResponse 直传，stub 返回字符串
+    return Promise.resolve({ status: result.status || 200, data: result.text, headers: {} });
   },
 };
 
@@ -71,6 +84,7 @@ let failed = 0;
 
 async function test(name, fn) {
   calls = [];
+  postResponder = null;
   try {
     await fn();
     passed += 1;
@@ -293,6 +307,76 @@ async function main() {
     const cold = await qq.getMusicInfo.call(self, { mid: "m-cold" });
     assert.strictEqual(cold, null);
     assert.strictEqual(calls.length, 0);
+  });
+
+  function qqSheetPage(songBegin, songs, songnum) {
+    return JSON.stringify({
+      code: 0,
+      req_0: {
+        code: 0,
+        data: {
+          dirinfo: {
+            title: "测试歌单",
+            picurl: "https://y.gtimg.cn/cover.jpg",
+            nickname: "创建者",
+            songnum: songnum,
+            visitnum: 8,
+          },
+          songlist: songs,
+        },
+      },
+    });
+  }
+
+  await test("QQ 歌单导入：链接提取 + 映射到 ChKSz·QQ音乐（mid 主键/封面/毫秒）", async () => {
+    postResponder = (url, body) => ({
+      text: qqSheetPage(0, [
+        { mid: "001QJyJ32zybEe", title: "句号", singer: [{ name: "G.E.M. 邓紫棋" }], album: { mid: "0049MVh824D7bM_1", title: "摩天动物园" }, interval: 235 },
+        { mid: "m2", songmid: "m2", name: "歌B", albummid: "albB", albumname: "专辑B", duration: 200 },
+      ], 2),
+    });
+    const items = await qq.importMusicSheet.call(self, "https://i.y.qq.com/n2/m/share/details/taoge.html?songid=0&id=7365161512");
+    assert.strictEqual(items.length, 2);
+    assert.strictEqual(items[0].id, "001QJyJ32zybEe");
+    assert.strictEqual(items[0].mid, "001QJyJ32zybEe");
+    assert.strictEqual(items[0].platform, "ChKSz·QQ音乐");
+    assert.strictEqual(items[0].artwork, "https://y.qq.com/music/photo_new/T002R300x300M0000049MVh824D7bM_1_5.jpg");
+    assert.strictEqual(items[0].duration, 235000);
+    assert.strictEqual(items[0].keyword, "句号 G.E.M. 邓紫棋");
+    assert.strictEqual(items[1].artwork, "https://y.qq.com/music/photo_new/T002R300x300M000albB_5.jpg");
+    // 请求带 sign 且 body 含歌单 ID 与分页参数
+    assert.ok(calls[0].url.indexOf("sign=zzb") >= 0);
+    assert.ok(JSON.parse(calls[0].body).req_0.param.disstid === 7365161512);
+  });
+
+  await test("QQ 歌单导入：多页聚合（songnum=35 → 两页）", async () => {
+    postResponder = (url, body) => {
+      const parsed = JSON.parse(body);
+      const begin = parsed.req_0.param.song_begin;
+      if (begin === 0) {
+        const list = [];
+        for (let i = 0; i < 30; i += 1) {
+          list.push({ mid: "p1m" + i, title: "歌" + i });
+        }
+        return { text: qqSheetPage(0, list, 35) };
+      }
+      const list = [];
+      for (let i = 0; i < 5; i += 1) {
+        list.push({ mid: "p2m" + i, title: "歌" + (30 + i) });
+      }
+      return { text: qqSheetPage(30, list, 35) };
+    };
+    const items = await qq.importMusicSheet.call(self, "7365161512");
+    assert.strictEqual(items.length, 35);
+    assert.strictEqual(items[34].mid, "p2m4");
+    assert.strictEqual(calls.length, 2);
+  });
+
+  await test("QQ 歌单导入：非法输入报错；hints 已挂载", async () => {
+    postResponder = () => ({ text: qqSheetPage(0, [], 0) });
+    await assert.rejects(qq.importMusicSheet.call(self, "not-a-playlist"), /无法识别 QQ 音乐歌单/);
+    assert.ok(qq.hints.importMusicSheet.length >= 2);
+    assert.strictEqual(typeof qq.getMusicSheetInfo, "function");
   });
 
   await test("酷狗搜索：duration 秒转毫秒", async () => {

@@ -5,7 +5,7 @@
 | 插件文件 | 音源名 | 能力 |
 | --- | --- | --- |
 | `dist/ChKSzNetease.js` | `ChKSz·网易云` | 搜索、播放解析、歌词（原文+翻译）、歌单导入 |
-| `dist/ChKSzQQ.js` | `ChKSz·QQ音乐` | 搜索、播放解析、歌词、封面回填（播放后） |
+| `dist/ChKSzQQ.js` | `ChKSz·QQ音乐` | 搜索、播放解析、歌词、封面回填（播放后）、QQ 歌单导入 |
 | `dist/ChKSzKugou.js` | `ChKSz·酷狗` | 搜索、播放解析、歌词、封面回填（播放后） |
 
 三个插件相互独立，可按需导入；同时启用后在 MusicFree「聚合搜索」中可一并命中。
@@ -29,12 +29,12 @@ https://raw.githubusercontent.com/Ohhu/plugin/ChKSz/dist/ChKSz.json
 
 **方式二：单个插件手动导入**
 
-MusicFree → 设置 → 插件管理 → 右上角菜单 → 从网络安装，按需粘贴（`chksz-v1.0.5` 为 git tag 锁定地址，内容不可变；直连 GitHub 原始文件，不经过 CDN）：
+MusicFree → 设置 → 插件管理 → 右上角菜单 → 从网络安装，按需粘贴（`chksz-v1.0.6` 为 git tag 锁定地址，内容不可变；直连 GitHub 原始文件，不经过 CDN）：
 
 ```text
-https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.5/dist/ChKSzNetease.js   # ChKSz·网易云
-https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.5/dist/ChKSzQQ.js        # ChKSz·QQ音乐
-https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.5/dist/ChKSzKugou.js     # ChKSz·酷狗
+https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.6/dist/ChKSzNetease.js   # ChKSz·网易云
+https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.6/dist/ChKSzQQ.js        # ChKSz·QQ音乐
+https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.6/dist/ChKSzKugou.js     # ChKSz·酷狗
 ```
 
 ### 3. 填写 API Key
@@ -75,6 +75,19 @@ ChKSz 点歌接口的**搜索结果不含封面**（列表项只有歌名/歌手
 
 网易云的搜索/歌单响应自带专辑封面，无此问题；其歌词自 v1.0.4 起同时返回原文与翻译。
 
+## QQ 音乐歌单导入
+
+`ChKSz·QQ音乐` 支持导入 QQ 音乐歌单（纯歌单 ID 或常见链接/分享文本）：
+
+```text
+7365161512
+https://y.qq.com/n/ryqq/playlist/7365161512
+```
+
+- ChKSz API 本身没有 QQ 歌单接口，导入走 **QQ 官方网关直连**（移植自 `qq-playlist-importer` 分支的已验证实现），**不消耗 ChKSz 额度**；
+- 导入的歌曲落在 `ChKSz·QQ音乐` 平台、以 mid 为主键，播放/歌词走 ChKSz 点歌接口（消耗额度）；导入即带专辑封面（QQ 官方封面地址），无需等播放回填；
+- 大歌单按 30 首/页分页拉取，上限 10000 首。
+
 ## 播放音质与自动降档
 
 MusicFree 播放时会从「默认音质」开始逐档尝试：插件解析失败（无版权、VIP 限制、解析超时等）会**静默降档**到下一档，所以实际播放音质可能低于设置值；在播放页手动切换音质则会直接请求对应档位。插件侧已把解析超时放宽到 25 秒（无损/母带在服务端解析较慢，超时过短是首播被降档的常见原因）。若某首歌确实无高音质版权，降档是预期行为。
@@ -104,6 +117,7 @@ src/
 ├── util.ts           # 宽松取值工具（163 系列响应 schema 未严格约定）
 ├── netease.ts        # 网易云后端（搜索/解析/歌词/歌单）
 ├── pointsong.ts      # QQ / 酷狗点歌后端（同形态接口的通用实现）
+├── qqsheet.ts        # QQ 歌单导入（直连 QQ 官方网关，sign 签名）
 ├── ChKSzNetease.ts   # 插件入口：ChKSz·网易云
 ├── ChKSzQQ.ts        # 插件入口：ChKSz·QQ音乐
 └── ChKSzKugou.ts     # 插件入口：ChKSz·酷狗

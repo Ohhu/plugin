@@ -260,7 +260,7 @@ function createPointSongPlugin(options: PointSongBackendOptions): ChKSzPluginDef
   return {
     platform: options.platform,
     author: "Ohhu",
-    version: "1.0.5",
+    version: "1.0.6",
     srcUrl: options.srcUrl,
     cacheControl: "no-store",
     primaryKey: [options.idParam],
@@ -277,14 +277,17 @@ function createPointSongPlugin(options: PointSongBackendOptions): ChKSzPluginDef
   };
 }
 
+/** QQ 音源名（qqsheet 歌单导入映射用，须与插件 platform 一致） */
+export const QQ_PLATFORM = "ChKSz·QQ音乐";
+
 /** ChKSz QQ 音乐插件 */
 export function createQQPlugin(): ChKSzPluginDefine {
   return createPointSongPlugin({
-    platform: "ChKSz·QQ音乐",
+    platform: QQ_PLATFORM,
     endpoint: "/api/qq_music",
     idParam: "mid",
     searchLimitParam: "num",
-    srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.5/dist/ChKSzQQ.js",
+    srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.6/dist/ChKSzQQ.js",
   });
 }
 
@@ -294,6 +297,6 @@ export function createKugouPlugin(): ChKSzPluginDefine {
     platform: "ChKSz·酷狗",
     endpoint: "/api/kugou_music",
     idParam: "id",
-    srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.5/dist/ChKSzKugou.js",
+    srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.6/dist/ChKSzKugou.js",
   });
 }

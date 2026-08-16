@@ -440,7 +440,7 @@ function $eb463bb9be5279f7$var$createPointSongPlugin(options) {
     return {
         platform: options.platform,
         author: "Ohhu",
-        version: "1.0.5",
+        version: "1.0.6",
         srcUrl: options.srcUrl,
         cacheControl: "no-store",
         primaryKey: [ options.idParam ],
@@ -457,13 +457,15 @@ function $eb463bb9be5279f7$var$createPointSongPlugin(options) {
     };
 }
 
+const $eb463bb9be5279f7$export$7a13aa922dabd899 = "ChKSz·QQ音乐";
+
 function $eb463bb9be5279f7$export$2ef6d92eb854799e() {
     return $eb463bb9be5279f7$var$createPointSongPlugin({
-        platform: "ChKSz·QQ音乐",
+        platform: $eb463bb9be5279f7$export$7a13aa922dabd899,
         endpoint: "/api/qq_music",
         idParam: "mid",
         searchLimitParam: "num",
-        srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.5/dist/ChKSzQQ.js"
+        srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.6/dist/ChKSzQQ.js"
     });
 }
 
@@ -472,8 +474,350 @@ function $eb463bb9be5279f7$export$eaa44ae5e5e89012() {
         platform: "ChKSz·酷狗",
         endpoint: "/api/kugou_music",
         idParam: "id",
-        srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.5/dist/ChKSzKugou.js"
+        srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.6/dist/ChKSzKugou.js"
     });
 }
 
-module.exports = (0, $eb463bb9be5279f7$export$2ef6d92eb854799e)();
+const $df22fc6da2618097$var$QQ_SHEET_API_URLS = [ "https://u6.y.qq.com/cgi-bin/musics.fcg", "https://u.y.qq.com/cgi-bin/musics.fcg" ];
+
+const $df22fc6da2618097$var$QQ_SHEET_PLATFORMS = [ "-1", "android", "iphone", "h5", "wxfshare", "iphone_wx", "windows" ];
+
+const $df22fc6da2618097$var$QQ_SHEET_PAGE_SIZE = 30;
+
+const $df22fc6da2618097$var$QQ_SHEET_MAX_TOTAL = 1e4;
+
+const $df22fc6da2618097$var$QQ_SHEET_TIMEOUT_MS = 1e4;
+
+const $df22fc6da2618097$var$QQ_SHEET_ERROR_LENGTH = 108;
+
+function $df22fc6da2618097$var$add32(a, b) {
+    return a + b & 4294967295;
+}
+
+function $df22fc6da2618097$var$rol(num, cnt) {
+    return num << cnt | num >>> 32 - cnt;
+}
+
+function $df22fc6da2618097$var$cmn(q, a, b, x, s, t) {
+    return $df22fc6da2618097$var$add32($df22fc6da2618097$var$rol($df22fc6da2618097$var$add32($df22fc6da2618097$var$add32(a, q), $df22fc6da2618097$var$add32(x, t)), s), b);
+}
+
+function $df22fc6da2618097$var$ff(a, b, c, d, x, s, t) {
+    return $df22fc6da2618097$var$cmn(b & c | ~b & d, a, b, x, s, t);
+}
+
+function $df22fc6da2618097$var$gg(a, b, c, d, x, s, t) {
+    return $df22fc6da2618097$var$cmn(b & d | c & ~d, a, b, x, s, t);
+}
+
+function $df22fc6da2618097$var$hh(a, b, c, d, x, s, t) {
+    return $df22fc6da2618097$var$cmn(b ^ c ^ d, a, b, x, s, t);
+}
+
+function $df22fc6da2618097$var$ii(a, b, c, d, x, s, t) {
+    return $df22fc6da2618097$var$cmn(c ^ (b | ~d), a, b, x, s, t);
+}
+
+function $df22fc6da2618097$var$md5Cycle(x, k) {
+    let a = x[0];
+    let b = x[1];
+    let c = x[2];
+    let d = x[3];
+    a = $df22fc6da2618097$var$ff(a, b, c, d, k[0], 7, -680876936);
+    d = $df22fc6da2618097$var$ff(d, a, b, c, k[1], 12, -389564586);
+    c = $df22fc6da2618097$var$ff(c, d, a, b, k[2], 17, 606105819);
+    b = $df22fc6da2618097$var$ff(b, c, d, a, k[3], 22, -1044525330);
+    a = $df22fc6da2618097$var$ff(a, b, c, d, k[4], 7, -176418897);
+    d = $df22fc6da2618097$var$ff(d, a, b, c, k[5], 12, 1200080426);
+    c = $df22fc6da2618097$var$ff(c, d, a, b, k[6], 17, -1473231341);
+    b = $df22fc6da2618097$var$ff(b, c, d, a, k[7], 22, -45705983);
+    a = $df22fc6da2618097$var$ff(a, b, c, d, k[8], 7, 1770035416);
+    d = $df22fc6da2618097$var$ff(d, a, b, c, k[9], 12, -1958414417);
+    c = $df22fc6da2618097$var$ff(c, d, a, b, k[10], 17, -42063);
+    b = $df22fc6da2618097$var$ff(b, c, d, a, k[11], 22, -1990404162);
+    a = $df22fc6da2618097$var$ff(a, b, c, d, k[12], 7, 1804603682);
+    d = $df22fc6da2618097$var$ff(d, a, b, c, k[13], 12, -40341101);
+    c = $df22fc6da2618097$var$ff(c, d, a, b, k[14], 17, -1502002290);
+    b = $df22fc6da2618097$var$ff(b, c, d, a, k[15], 22, 1236535329);
+    a = $df22fc6da2618097$var$gg(a, b, c, d, k[1], 5, -165796510);
+    d = $df22fc6da2618097$var$gg(d, a, b, c, k[6], 9, -1069501632);
+    c = $df22fc6da2618097$var$gg(c, d, a, b, k[11], 14, 643717713);
+    b = $df22fc6da2618097$var$gg(b, c, d, a, k[0], 20, -373897302);
+    a = $df22fc6da2618097$var$gg(a, b, c, d, k[5], 5, -701558691);
+    d = $df22fc6da2618097$var$gg(d, a, b, c, k[10], 9, 38016083);
+    c = $df22fc6da2618097$var$gg(c, d, a, b, k[15], 14, -660478335);
+    b = $df22fc6da2618097$var$gg(b, c, d, a, k[4], 20, -405537848);
+    a = $df22fc6da2618097$var$gg(a, b, c, d, k[9], 5, 568446438);
+    d = $df22fc6da2618097$var$gg(d, a, b, c, k[14], 9, -1019803690);
+    c = $df22fc6da2618097$var$gg(c, d, a, b, k[3], 14, -187363961);
+    b = $df22fc6da2618097$var$gg(b, c, d, a, k[8], 20, 1163531501);
+    a = $df22fc6da2618097$var$gg(a, b, c, d, k[13], 5, -1444681467);
+    d = $df22fc6da2618097$var$gg(d, a, b, c, k[2], 9, -51403784);
+    c = $df22fc6da2618097$var$gg(c, d, a, b, k[7], 14, 1735328473);
+    b = $df22fc6da2618097$var$gg(b, c, d, a, k[12], 20, -1926607734);
+    a = $df22fc6da2618097$var$hh(a, b, c, d, k[5], 4, -378558);
+    d = $df22fc6da2618097$var$hh(d, a, b, c, k[8], 11, -2022574463);
+    c = $df22fc6da2618097$var$hh(c, d, a, b, k[11], 16, 1839030562);
+    b = $df22fc6da2618097$var$hh(b, c, d, a, k[14], 23, -35309556);
+    a = $df22fc6da2618097$var$hh(a, b, c, d, k[1], 4, -1530992060);
+    d = $df22fc6da2618097$var$hh(d, a, b, c, k[4], 11, 1272893353);
+    c = $df22fc6da2618097$var$hh(c, d, a, b, k[7], 16, -155497632);
+    b = $df22fc6da2618097$var$hh(b, c, d, a, k[10], 23, -1094730640);
+    a = $df22fc6da2618097$var$hh(a, b, c, d, k[13], 4, 681279174);
+    d = $df22fc6da2618097$var$hh(d, a, b, c, k[0], 11, -358537222);
+    c = $df22fc6da2618097$var$hh(c, d, a, b, k[3], 16, -722521979);
+    b = $df22fc6da2618097$var$hh(b, c, d, a, k[6], 23, 76029189);
+    a = $df22fc6da2618097$var$hh(a, b, c, d, k[9], 4, -640364487);
+    d = $df22fc6da2618097$var$hh(d, a, b, c, k[12], 11, -421815835);
+    c = $df22fc6da2618097$var$hh(c, d, a, b, k[15], 16, 530742520);
+    b = $df22fc6da2618097$var$hh(b, c, d, a, k[2], 23, -995338651);
+    a = $df22fc6da2618097$var$ii(a, b, c, d, k[0], 6, -198630844);
+    d = $df22fc6da2618097$var$ii(d, a, b, c, k[7], 10, 1126891415);
+    c = $df22fc6da2618097$var$ii(c, d, a, b, k[14], 15, -1416354905);
+    b = $df22fc6da2618097$var$ii(b, c, d, a, k[5], 21, -57434055);
+    a = $df22fc6da2618097$var$ii(a, b, c, d, k[12], 6, 1700485571);
+    d = $df22fc6da2618097$var$ii(d, a, b, c, k[3], 10, -1894986606);
+    c = $df22fc6da2618097$var$ii(c, d, a, b, k[10], 15, -1051523);
+    b = $df22fc6da2618097$var$ii(b, c, d, a, k[1], 21, -2054922799);
+    a = $df22fc6da2618097$var$ii(a, b, c, d, k[8], 6, 1873313359);
+    d = $df22fc6da2618097$var$ii(d, a, b, c, k[15], 10, -30611744);
+    c = $df22fc6da2618097$var$ii(c, d, a, b, k[6], 15, -1560198380);
+    b = $df22fc6da2618097$var$ii(b, c, d, a, k[13], 21, 1309151649);
+    a = $df22fc6da2618097$var$ii(a, b, c, d, k[4], 6, -145523070);
+    d = $df22fc6da2618097$var$ii(d, a, b, c, k[11], 10, -1120210379);
+    c = $df22fc6da2618097$var$ii(c, d, a, b, k[2], 15, 718787259);
+    b = $df22fc6da2618097$var$ii(b, c, d, a, k[9], 21, -343485551);
+    x[0] = $df22fc6da2618097$var$add32(a, x[0]);
+    x[1] = $df22fc6da2618097$var$add32(b, x[1]);
+    x[2] = $df22fc6da2618097$var$add32(c, x[2]);
+    x[3] = $df22fc6da2618097$var$add32(d, x[3]);
+}
+
+function $df22fc6da2618097$var$md5Bytes(input) {
+    const encoded = unescape(encodeURIComponent(input));
+    const bytes = [];
+    for (let i = 0; i < encoded.length; i += 1) bytes.push(encoded.charCodeAt(i));
+    return bytes;
+}
+
+function $df22fc6da2618097$var$md5(input) {
+    const bytes = $df22fc6da2618097$var$md5Bytes(input);
+    const originalBitLength = bytes.length * 8;
+    const paddedLength = ((bytes.length + 8 >> 6) + 1) * 64;
+    const padded = [];
+    for (let i = 0; i < paddedLength; i += 1) padded.push(0);
+    for (let i = 0; i < bytes.length; i += 1) padded[i] = bytes[i];
+    padded[bytes.length] = 128;
+    for (let i = 0; i < 8; i += 1) padded[paddedLength - 8 + i] = Math.floor(originalBitLength / Math.pow(256, i)) & 255;
+    const state = [ 1732584193, -271733879, -1732584194, 271733878 ];
+    for (let i = 0; i < paddedLength; i += 64) {
+        const block = [];
+        for (let j = 0; j < 64; j += 4) block.push(padded[i + j] | padded[i + j + 1] << 8 | padded[i + j + 2] << 16 | padded[i + j + 3] << 24);
+        $df22fc6da2618097$var$md5Cycle(state, block);
+    }
+    const hex = [];
+    for (let i = 0; i < state.length; i += 1) {
+        const n = state[i];
+        for (let j = 0; j < 4; j += 1) {
+            const byte = n >>> j * 8 & 255;
+            const text = byte.toString(16);
+            hex.push(text.length < 2 ? "0" + text : text);
+        }
+    }
+    return hex.join("");
+}
+
+function $df22fc6da2618097$var$selectChars(str, indices) {
+    let result = "";
+    for (let i = 0; i < indices.length; i += 1) result += str[indices[i]];
+    return result;
+}
+
+function $df22fc6da2618097$var$qqSheetSign(param) {
+    const l1 = [ 212, 45, 80, 68, 195, 163, 163, 203, 157, 220, 254, 91, 204, 79, 104, 6 ];
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    const md5Str = $df22fc6da2618097$var$md5(param).toUpperCase();
+    const t1 = $df22fc6da2618097$var$selectChars(md5Str, [ 21, 4, 9, 26, 16, 20, 27, 30 ]);
+    const t3 = $df22fc6da2618097$var$selectChars(md5Str, [ 18, 11, 3, 2, 1, 7, 6, 25 ]);
+    const ls2 = [];
+    for (let i = 0; i < 16; i += 1) {
+        const x1 = parseInt(md5Str[i * 2], 16);
+        const x2 = parseInt(md5Str[i * 2 + 1], 16);
+        ls2.push(x1 * 16 ^ x2 ^ l1[i]);
+    }
+    const ls3 = [];
+    for (let i = 0; i < 6; i += 1) if (i === 5) {
+        const last = ls2[ls2.length - 1];
+        ls3.push(chars[last >> 2], chars[(last & 3) << 4]);
+    } else {
+        const x4 = ls2[i * 3] >> 2;
+        const x5 = ls2[i * 3 + 1] >> 4 ^ (ls2[i * 3] & 3) << 4;
+        const x6 = ls2[i * 3 + 2] >> 6 ^ (ls2[i * 3 + 1] & 15) << 2;
+        const x7 = 63 & ls2[i * 3 + 2];
+        ls3.push(chars[x4] + chars[x5] + chars[x6] + chars[x7]);
+    }
+    const combined = ls3.join("");
+    return "zzb" + (t1 + combined + t3).toLowerCase();
+}
+
+function $df22fc6da2618097$export$e8fa40ce8154c452(input) {
+    const value = String(input || "").trim();
+    if (/^\d+$/.test(value)) return value;
+    const patterns = [ /y\.qq\.com\/n\/ryqq\/playlist\/(\d+)/, /\/playlist\/(\d+)/, /[?&]id=(\d+)/ ];
+    for (let i = 0; i < patterns.length; i += 1) {
+        const match = value.match(patterns[i]);
+        if (match) return match[1];
+    }
+    return null;
+}
+
+function $df22fc6da2618097$var$buildSheetRequestBody(disstid, platform, songBegin, songNum) {
+    return JSON.stringify({
+        req_0: {
+            module: "music.srfDissInfo.aiDissInfo",
+            method: "uniform_get_Dissinfo",
+            param: {
+                disstid: Number(disstid),
+                enc_host_uin: "",
+                tag: 1,
+                userinfo: 1,
+                song_begin: songBegin,
+                song_num: songNum
+            }
+        },
+        comm: {
+            g_tk: 5381,
+            uin: 0,
+            format: "json",
+            platform: platform
+        }
+    });
+}
+
+async function $df22fc6da2618097$var$fetchSheetPage(disstid, songBegin, songNum) {
+    let lastError = null;
+    for (let u = 0; u < $df22fc6da2618097$var$QQ_SHEET_API_URLS.length; u += 1) for (let p = 0; p < $df22fc6da2618097$var$QQ_SHEET_PLATFORMS.length; p += 1) {
+        const bodyText = $df22fc6da2618097$var$buildSheetRequestBody(disstid, $df22fc6da2618097$var$QQ_SHEET_PLATFORMS[p], songBegin, songNum);
+        const sign = $df22fc6da2618097$var$qqSheetSign(bodyText);
+        const url = $df22fc6da2618097$var$QQ_SHEET_API_URLS[u] + "?sign=" + encodeURIComponent(sign) + "&_=" + Date.now();
+        try {
+            const response = await (0, $parcel$interopDefault($g8oBv$axios)).post(url, bodyText, {
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                timeout: $df22fc6da2618097$var$QQ_SHEET_TIMEOUT_MS,
+                responseType: "text",
+                transformResponse: [ function(data) {
+                    return data;
+                } ]
+            });
+            const text = typeof response.data === "string" ? response.data : JSON.stringify(response.data);
+            if (text.length === $df22fc6da2618097$var$QQ_SHEET_ERROR_LENGTH) {
+                lastError = new Error("QQ 音乐网关拒绝了该请求组合");
+                continue;
+            }
+            const json = (0, $2fe70d8413f7612b$export$badcc9423dc3e1c1)(JSON.parse(text));
+            const req0 = (0, $2fe70d8413f7612b$export$badcc9423dc3e1c1)(json ? json.req_0 : undefined);
+            const req0Data = (0, $2fe70d8413f7612b$export$badcc9423dc3e1c1)(req0 ? req0.data : undefined);
+            if (json && json.code === 0 && req0 && req0.code === 0 && Array.isArray(req0Data ? req0Data.songlist : undefined)) return json;
+            lastError = new Error("QQ音乐歌单响应格式异常");
+        } catch (error) {
+            lastError = error && error.message ? error : new Error(String(error));
+        }
+    }
+    throw lastError || new Error("QQ音乐歌单请求全部失败");
+}
+
+function $df22fc6da2618097$var$qqAlbumCover(albumMid) {
+    return albumMid ? "https://y.qq.com/music/photo_new/T002R300x300M000" + albumMid + "_5.jpg" : undefined;
+}
+
+function $df22fc6da2618097$var$mapSheetSong(song) {
+    const album = (0, $2fe70d8413f7612b$export$badcc9423dc3e1c1)(song.album);
+    const albumMid = (0, $2fe70d8413f7612b$export$8d3f56d05539298a)(album ? album.pmid : undefined, album ? album.mid : undefined, song.albummid) || "";
+    const mid = String((0, $2fe70d8413f7612b$export$c4ed8c822f31cc12)(song.mid, song.songmid) || "");
+    const title = (0, $2fe70d8413f7612b$export$8d3f56d05539298a)(song.title, song.name) || "";
+    const artist = (0, $2fe70d8413f7612b$export$f1c212ee0684f3c2)(song.singer) || "";
+    return {
+        id: mid,
+        mid: mid,
+        title: title,
+        artist: artist,
+        album: (0, $2fe70d8413f7612b$export$8d3f56d05539298a)(album ? album.title : undefined, album ? album.name : undefined, song.albumname) || "",
+        artwork: $df22fc6da2618097$var$qqAlbumCover(albumMid),
+        duration: (0, $2fe70d8413f7612b$export$c8a14c10c33048c2)((0, $2fe70d8413f7612b$export$c4ed8c822f31cc12)(song.interval, song.duration)),
+        platform: (0, $eb463bb9be5279f7$export$7a13aa922dabd899),
+        source: (0, $eb463bb9be5279f7$export$7a13aa922dabd899),
+        keyword: (title + " " + artist).trim()
+    };
+}
+
+async function $df22fc6da2618097$var$fetchQQSheet(input) {
+    const playlistId = $df22fc6da2618097$export$e8fa40ce8154c452(input);
+    if (!playlistId) throw new Error("无法识别 QQ 音乐歌单：请传入 y.qq.com 歌单链接或纯数字歌单 ID");
+    const firstPage = await $df22fc6da2618097$var$fetchSheetPage(playlistId, 0, $df22fc6da2618097$var$QQ_SHEET_PAGE_SIZE);
+    const req0 = (0, $2fe70d8413f7612b$export$badcc9423dc3e1c1)(firstPage.req_0);
+    const firstData = (0, $2fe70d8413f7612b$export$badcc9423dc3e1c1)(req0 ? req0.data : undefined) || {};
+    const dirinfo = (0, $2fe70d8413f7612b$export$badcc9423dc3e1c1)(firstData.dirinfo) || {};
+    const firstList = Array.isArray(firstData.songlist) ? firstData.songlist : [];
+    const total = Math.min((0, $2fe70d8413f7612b$export$9c2d3e693419842c)(dirinfo.songnum) || firstList.length || 0, $df22fc6da2618097$var$QQ_SHEET_MAX_TOTAL);
+    const songs = firstList.map(function(item) {
+        return $df22fc6da2618097$var$mapSheetSong((0, $2fe70d8413f7612b$export$badcc9423dc3e1c1)(item) || {});
+    });
+    const pageCount = Math.ceil(total / $df22fc6da2618097$var$QQ_SHEET_PAGE_SIZE);
+    for (let page = 1; page < pageCount; page += 1) {
+        const songBegin = page * $df22fc6da2618097$var$QQ_SHEET_PAGE_SIZE;
+        const songNum = Math.min($df22fc6da2618097$var$QQ_SHEET_PAGE_SIZE, total - songBegin);
+        const pageResult = await $df22fc6da2618097$var$fetchSheetPage(playlistId, songBegin, songNum);
+        const req0Next = (0, $2fe70d8413f7612b$export$badcc9423dc3e1c1)(pageResult.req_0);
+        const dataNext = (0, $2fe70d8413f7612b$export$badcc9423dc3e1c1)(req0Next ? req0Next.data : undefined) || {};
+        const listNext = Array.isArray(dataNext.songlist) ? dataNext.songlist : [];
+        for (let i = 0; i < listNext.length; i += 1) songs.push($df22fc6da2618097$var$mapSheetSong((0, 
+        $2fe70d8413f7612b$export$badcc9423dc3e1c1)(listNext[i]) || {}));
+    }
+    return {
+        id: playlistId,
+        title: (0, $2fe70d8413f7612b$export$8d3f56d05539298a)(dirinfo.title, dirinfo.dissname) || "QQ音乐歌单",
+        description: (0, $2fe70d8413f7612b$export$8d3f56d05539298a)(dirinfo.desc, dirinfo.dissdesc) || "",
+        cover: (0, $2fe70d8413f7612b$export$8d3f56d05539298a)(dirinfo.picurl, dirinfo.logo),
+        creator: (0, $2fe70d8413f7612b$export$8d3f56d05539298a)(dirinfo.nickname, dirinfo.host_nick),
+        playCount: (0, $2fe70d8413f7612b$export$9c2d3e693419842c)(dirinfo.visitnum, dirinfo.listennum),
+        songCount: total,
+        songs: songs
+    };
+}
+
+async function $df22fc6da2618097$var$importQQMusicSheet(urlLike) {
+    const sheet = await $df22fc6da2618097$var$fetchQQSheet(urlLike);
+    return sheet.songs;
+}
+
+async function $df22fc6da2618097$var$getQQMusicSheetInfo(sheetItem, page) {
+    const sheet = await $df22fc6da2618097$var$fetchQQSheet(String(sheetItem.id));
+    const safePage = Math.max(1, Math.floor(Number(page)) || 1);
+    const start = (safePage - 1) * $df22fc6da2618097$var$QQ_SHEET_PAGE_SIZE;
+    return {
+        isEnd: start + $df22fc6da2618097$var$QQ_SHEET_PAGE_SIZE >= sheet.songs.length,
+        sheetItem: {
+            id: sheet.id,
+            platform: (0, $eb463bb9be5279f7$export$7a13aa922dabd899),
+            source: (0, $eb463bb9be5279f7$export$7a13aa922dabd899),
+            title: sheet.title || sheetItem.title,
+            description: sheet.description || sheetItem.description,
+            artwork: sheet.cover || sheetItem.coverImg,
+            artist: sheet.creator,
+            playCount: sheet.playCount,
+            worksNum: sheet.songCount
+        },
+        musicList: sheet.songs.slice(start, start + $df22fc6da2618097$var$QQ_SHEET_PAGE_SIZE)
+    };
+}
+
+function $df22fc6da2618097$export$9743f9e908b8e60(plugin) {
+    plugin.importMusicSheet = $df22fc6da2618097$var$importQQMusicSheet;
+    plugin.getMusicSheetInfo = $df22fc6da2618097$var$getQQMusicSheetInfo;
+    if (plugin.hints) plugin.hints.importMusicSheet = [ "支持 QQ 音乐歌单链接（y.qq.com）或纯数字歌单 ID。", "歌单通过 QQ 官方接口直连获取，不消耗 ChKSz 额度；播放时走 ChKSz 解析。" ];
+    return plugin;
+}
+
+module.exports = (0, $df22fc6da2618097$export$9743f9e908b8e60)((0, $eb463bb9be5279f7$export$2ef6d92eb854799e)());
