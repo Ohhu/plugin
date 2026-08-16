@@ -391,10 +391,13 @@ async function $7f28772cb2d30742$var$getNeteaseLyric(musicItem) {
     });
     const root = (0, $2fe70d8413f7612b$export$badcc9423dc3e1c1)(data) || {};
     const inner = (0, $2fe70d8413f7612b$export$badcc9423dc3e1c1)(root.data) || root;
-    const lrc = (0, $2fe70d8413f7612b$export$8d3f56d05539298a)($7f28772cb2d30742$var$lyricTextOf(inner.lrc), $7f28772cb2d30742$var$lyricTextOf(root.lrc), $7f28772cb2d30742$var$lyricTextOf(inner.lyric), $7f28772cb2d30742$var$lyricTextOf(root.lyric), $7f28772cb2d30742$var$lyricTextOf(inner.tlyric));
-    return lrc ? {
-        lrc: lrc
-    } : null;
+    const rawLrc = (0, $2fe70d8413f7612b$export$8d3f56d05539298a)($7f28772cb2d30742$var$lyricTextOf(inner.lrc), $7f28772cb2d30742$var$lyricTextOf(root.lrc), $7f28772cb2d30742$var$lyricTextOf(inner.lyric), $7f28772cb2d30742$var$lyricTextOf(root.lyric));
+    const translation = (0, $2fe70d8413f7612b$export$8d3f56d05539298a)($7f28772cb2d30742$var$lyricTextOf(inner.tlyric), $7f28772cb2d30742$var$lyricTextOf(root.tlyric));
+    if (!rawLrc && !translation) return null;
+    const result = {};
+    if (rawLrc) result.rawLrc = rawLrc;
+    if (translation) result.translation = translation;
+    return result;
 }
 
 function $7f28772cb2d30742$export$c2125087b6972bc(input) {
@@ -470,8 +473,8 @@ function $7f28772cb2d30742$export$db196fef1ba941f3() {
     return {
         platform: $7f28772cb2d30742$export$fb4417ed62a774fb,
         author: "Ohhu",
-        version: "1.0.3",
-        srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.3/dist/ChKSzNetease.js",
+        version: "1.0.4",
+        srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.4/dist/ChKSzNetease.js",
         cacheControl: "no-store",
         primaryKey: [ "id" ],
         supportedSearchType: [ "music" ],

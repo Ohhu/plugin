@@ -145,15 +145,30 @@ async function getNeteaseLyric(
 
   const root = asRecord(data) || {};
   const inner = asRecord(root.data) || root;
-  // 原文 > 翻译；罗马音不参与合并，避免时间轴错乱
-  const lrc = firstString(
+  // 原文与翻译分开返回；罗马音不参与（App 无对应展示字段）
+  // 注意：lrc 在 App 侧是 @deprecated 的“歌词 URL”字段，文本必须走 rawLrc/translation
+  const rawLrc = firstString(
     lyricTextOf(inner.lrc),
     lyricTextOf(root.lrc),
     lyricTextOf(inner.lyric),
-    lyricTextOf(root.lyric),
-    lyricTextOf(inner.tlyric)
+    lyricTextOf(root.lyric)
   );
-  return lrc ? { lrc } : null;
+  const translation = firstString(
+    lyricTextOf(inner.tlyric),
+    lyricTextOf(root.tlyric)
+  );
+  if (!rawLrc && !translation) {
+    return null;
+  }
+  // types/ 声明按上游旧快照不得修改，translation 用收窄对象断言补齐
+  const result: Record<string, string> = {};
+  if (rawLrc) {
+    result.rawLrc = rawLrc;
+  }
+  if (translation) {
+    result.translation = translation;
+  }
+  return result as ILyric.ILyricSource;
 }
 
 /** 从歌单链接或纯数字中提取网易云歌单 ID */
@@ -258,8 +273,8 @@ export function createNeteasePlugin(): ChKSzPluginDefine {
   return {
     platform: NETEASE_PLATFORM,
     author: "Ohhu",
-    version: "1.0.3",
-    srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.3/dist/ChKSzNetease.js",
+    version: "1.0.4",
+    srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.4/dist/ChKSzNetease.js",
     cacheControl: "no-store",
     primaryKey: ["id"],
     supportedSearchType: ["music"],

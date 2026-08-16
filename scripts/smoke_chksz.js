@@ -147,7 +147,7 @@ async function main() {
     assert.strictEqual(queryOf(lastUrl()).level, "standard");
   });
 
-  await test("网易云歌词：原文优先", async () => {
+  await test("网易云歌词：rawLrc 原文 + translation 翻译", async () => {
     responder = () => ({
       data: {
         lrc: { version: 1, lyric: "[00:01.00]hello\n[00:02.00]world" },
@@ -155,8 +155,9 @@ async function main() {
       },
     });
     const result = await netease.getLyric.call(self, { id: 9 });
-    assert.ok(result.lrc.indexOf("hello") >= 0);
-    assert.ok(result.lrc.indexOf("你好") < 0);
+    assert.ok(result.rawLrc.indexOf("hello") >= 0);
+    assert.ok(result.rawLrc.indexOf("你好") < 0);
+    assert.ok(result.translation.indexOf("你好") >= 0);
     assert.strictEqual(queryOf(lastUrl()).id, "9");
   });
 
@@ -230,7 +231,17 @@ async function main() {
 
   await test("QQ 解析：mid 直解 + super→master", async () => {
     responder = () => ({
-      data: { url: "https://qq.example.com/a.flac", name: "QA", lrc: "[00:01]q", interval: 200, mid: "m1", format: "flac" },
+      data: {
+        url: "https://qq.example.com/a.flac",
+        name: "QA",
+        singer: "SA",
+        album: "AA",
+        cover: "https://qq.example.com/cover.jpg",
+        lrc: "[00:01]q",
+        interval: 200,
+        mid: "m1",
+        format: "flac",
+      },
     });
     const item = { id: "m1", mid: "m1", title: "QA", artist: "SA", keyword: "kw" };
     const result = await qq.getMediaSource.call(self, item, "super");
@@ -241,10 +252,44 @@ async function main() {
     assert.strictEqual(query.size, "master");
   });
 
-  await test("QQ 歌词：详情 lrc", async () => {
-    responder = () => ({ data: { url: "https://x/1.flac", lrc: "[00:01.00]qq 歌词" } });
-    const result = await qq.getLyric.call(self, { id: "m1", mid: "m1", title: "QA", keyword: "kw" });
-    assert.strictEqual(result.lrc, "[00:01.00]qq 歌词");
+  await test("QQ 歌词：缓存热时零请求，冷缓存取详情并回填", async () => {
+    // 上一个测试解析 m1 时详情已入缓存
+    responder = () => {
+      throw new Error("不应发起请求");
+    };
+    const warm = await qq.getLyric.call(self, { id: "m1", mid: "m1", title: "QA", keyword: "kw" });
+    assert.strictEqual(warm.rawLrc, "[00:01]q");
+    assert.strictEqual(calls.length, 0);
+
+    responder = () => ({ data: { url: "https://x/9.flac", lrc: "[00:01.00]qq 歌词" } });
+    const cold = await qq.getLyric.call(self, { id: "m9", mid: "m9", title: "QI", keyword: "kw9" });
+    assert.strictEqual(cold.rawLrc, "[00:01.00]qq 歌词");
+    assert.strictEqual(queryOf(lastUrl()).mid, "m9");
+
+    calls = [];
+    responder = () => {
+      throw new Error("不应发起请求");
+    };
+    const again = await qq.getLyric.call(self, { id: "m9", mid: "m9", title: "QI" });
+    assert.strictEqual(again.rawLrc, "[00:01.00]qq 歌词");
+    assert.strictEqual(calls.length, 0);
+  });
+
+  await test("QQ getMusicInfo：缓存命中回填封面/专辑/时长，冷缓存返回 null", async () => {
+    responder = () => {
+      throw new Error("不应发起请求");
+    };
+    const info = await qq.getMusicInfo.call(self, { mid: "m1", id: "m1" });
+    assert.strictEqual(info.artwork, "https://qq.example.com/cover.jpg");
+    assert.strictEqual(info.album, "AA");
+    assert.strictEqual(info.title, "QA");
+    assert.strictEqual(info.artist, "SA");
+    assert.strictEqual(info.duration, 200000); // interval 秒 → 毫秒
+    assert.strictEqual(calls.length, 0);
+
+    const cold = await qq.getMusicInfo.call(self, { mid: "m-cold" });
+    assert.strictEqual(cold, null);
+    assert.strictEqual(calls.length, 0);
   });
 
   await test("酷狗搜索：duration 秒转毫秒", async () => {
@@ -264,13 +309,37 @@ async function main() {
   });
 
   await test("酷狗解析：id 直解 + standard→320k", async () => {
-    responder = () => ({ data: { url: "https://kg.example.com/a.mp3", lrc: "[00:01]k" } });
+    responder = () => ({
+      data: {
+        url: "https://kg.example.com/a.mp3",
+        name: "KA",
+        singer: "SK",
+        album: "AK",
+        cover: "https://kg.example.com/cover.jpg",
+        lrc: "[00:01]k",
+        interval: 190,
+        id: "kg1",
+      },
+    });
     const result = await kugou.getMediaSource.call(self, { id: "kg1", title: "KA", artist: "SK", keyword: "kw" }, "standard");
     assert.strictEqual(result.url, "https://kg.example.com/a.mp3");
     const query = queryOf(lastUrl());
     assert.strictEqual(query.id, "kg1");
     assert.strictEqual(query.msg, "kw");
     assert.strictEqual(query.size, "320k");
+  });
+
+  await test("酷狗歌词 + getMusicInfo：解析后读缓存，零请求", async () => {
+    responder = () => {
+      throw new Error("不应发起请求");
+    };
+    const lyric = await kugou.getLyric.call(self, { id: "kg1", title: "KA", keyword: "kw" });
+    assert.strictEqual(lyric.rawLrc, "[00:01]k");
+    const info = await kugou.getMusicInfo.call(self, { id: "kg1" });
+    assert.strictEqual(info.artwork, "https://kg.example.com/cover.jpg");
+    assert.strictEqual(info.album, "AK");
+    assert.strictEqual(info.duration, 190000);
+    assert.strictEqual(calls.length, 0);
   });
 
   await test("非 music 搜索类型直接返回空，不发起请求", async () => {
@@ -285,7 +354,7 @@ async function main() {
   await test("未配置 Key：给出配置指引", async () => {
     responder = () => ({ data: {} });
     await assert.rejects(netease.search.call(noKeySelf, "kw", 1, "music"), /尚未配置 ChKSz API Key/);
-    await assert.rejects(qq.getLyric.call(declaredSelf, { id: "m1" }), /尚未配置 ChKSz API Key/);
+    await assert.rejects(qq.getLyric.call(declaredSelf, { id: "mnk", mid: "mnk", keyword: "k" }), /尚未配置 ChKSz API Key/);
   });
 
   await test("401：转述为 Key 无效且不回显 Key", async () => {
@@ -314,7 +383,7 @@ async function main() {
       return { data: { lrc: { lyric: "[00:01.00]after retry" } } };
     };
     const result = await netease.getLyric.call(self, { id: 5 });
-    assert.ok(result.lrc.indexOf("after retry") >= 0);
+    assert.ok(result.rawLrc.indexOf("after retry") >= 0);
     assert.strictEqual(calls.length, 2);
   });
 

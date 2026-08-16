@@ -294,6 +294,8 @@ function $0c106dafb4e2ddcd$export$83ab0c0b59227553(root, depth) {
 
 const $0711457daf45bbf8$var$POINT_SONG_SEARCH_LIMIT = 30;
 
+const $0711457daf45bbf8$var$DETAIL_CACHE_LIMIT = 100;
+
 const $0711457daf45bbf8$var$SIZE_BY_QUALITY = {
     low: "128k",
     standard: "320k",
@@ -323,6 +325,36 @@ function $0711457daf45bbf8$var$mapPointSongItem(options, raw, keyword) {
 }
 
 function $0711457daf45bbf8$var$createPointSongPlugin(options) {
+    const detailCache = {};
+    const detailCacheOrder = [];
+    function cacheKeyOf(record) {
+        const key = (0, $0c106dafb4e2ddcd$export$8d3f56d05539298a)(record[options.idParam], options.idParam === "mid" ? record.songmid : undefined, record.id);
+        return key || null;
+    }
+    function rememberDetail(key, detail) {
+        const detailData = (0, $0c106dafb4e2ddcd$export$badcc9423dc3e1c1)(detail.data);
+        const info = {
+            url: (0, $0c106dafb4e2ddcd$export$8d3f56d05539298a)(detail.url, detailData ? detailData.url : undefined),
+            cover: (0, $0c106dafb4e2ddcd$export$8d3f56d05539298a)(detail.cover, detailData ? detailData.cover : undefined),
+            lrc: (0, $0c106dafb4e2ddcd$export$8d3f56d05539298a)(detail.lrc, detailData ? detailData.lrc : undefined),
+            album: (0, $0c106dafb4e2ddcd$export$8d3f56d05539298a)(detail.album, detailData ? detailData.album : undefined),
+            title: (0, $0c106dafb4e2ddcd$export$8d3f56d05539298a)(detail.name, detailData ? detailData.name : undefined),
+            artist: (0, $0c106dafb4e2ddcd$export$f1c212ee0684f3c2)(detail.singer, detailData ? detailData.singer : undefined),
+            interval: (0, $0c106dafb4e2ddcd$export$9c2d3e693419842c)(detail.interval, detailData ? detailData.interval : undefined)
+        };
+        const cacheKey = key || cacheKeyOf(detail);
+        if (cacheKey) {
+            if (!detailCache[cacheKey]) {
+                detailCacheOrder.push(cacheKey);
+                while (detailCacheOrder.length > $0711457daf45bbf8$var$DETAIL_CACHE_LIMIT) {
+                    const oldest = detailCacheOrder.shift();
+                    if (oldest && detailCache[oldest]) delete detailCache[oldest];
+                }
+            }
+            detailCache[cacheKey] = info;
+        }
+        return info;
+    }
     async function search(query, page, type) {
         if (type !== "music") return {
             isEnd: true,
@@ -368,10 +400,10 @@ function $0711457daf45bbf8$var$createPointSongPlugin(options) {
     }
     async function getMediaSource(musicItem, quality) {
         const size = $0711457daf45bbf8$var$SIZE_BY_QUALITY[quality] || "flac";
+        const record = (0, $0c106dafb4e2ddcd$export$badcc9423dc3e1c1)(musicItem) || {};
         const detail = await fetchDetail(this, musicItem, size);
-        const detailData = (0, $0c106dafb4e2ddcd$export$badcc9423dc3e1c1)(detail.data);
-        const url = (0, $0c106dafb4e2ddcd$export$8d3f56d05539298a)(detail.url, detailData ? detailData.url : undefined, (0, 
-        $0c106dafb4e2ddcd$export$22fc19959322c831)(detail));
+        const info = rememberDetail(cacheKeyOf(record), detail);
+        const url = (0, $0c106dafb4e2ddcd$export$8d3f56d05539298a)(info.url, (0, $0c106dafb4e2ddcd$export$22fc19959322c831)(detail));
         if (!url) throw (0, $9220485a37509564$export$13019d6ed2a4b3dd)("ChKSz 未返回播放地址：歌曲可能无版权或当前音质不可用，可尝试切换音质");
         return {
             url: url,
@@ -379,17 +411,35 @@ function $0711457daf45bbf8$var$createPointSongPlugin(options) {
         };
     }
     async function getLyric(musicItem) {
-        const detail = await fetchDetail(this, musicItem);
-        const detailData = (0, $0c106dafb4e2ddcd$export$badcc9423dc3e1c1)(detail.data);
-        const lrc = (0, $0c106dafb4e2ddcd$export$8d3f56d05539298a)(detail.lrc, detailData ? detailData.lrc : undefined);
-        return lrc ? {
-            lrc: lrc
+        const record = (0, $0c106dafb4e2ddcd$export$badcc9423dc3e1c1)(musicItem) || {};
+        const key = cacheKeyOf(record);
+        const cached = key ? detailCache[key] : undefined;
+        if (cached) return cached.lrc ? {
+            rawLrc: cached.lrc
         } : null;
+        const detail = await fetchDetail(this, musicItem);
+        const info = rememberDetail(key, detail);
+        return info.lrc ? {
+            rawLrc: info.lrc
+        } : null;
+    }
+    async function getMusicInfo(musicBase) {
+        const record = (0, $0c106dafb4e2ddcd$export$badcc9423dc3e1c1)(musicBase) || {};
+        const key = cacheKeyOf(record);
+        const cached = key ? detailCache[key] : undefined;
+        if (!cached) return null;
+        const info = {};
+        if (cached.title) info.title = cached.title;
+        if (cached.artist) info.artist = cached.artist;
+        if (cached.album) info.album = cached.album;
+        if (cached.cover) info.artwork = cached.cover;
+        if (cached.interval) info.duration = (0, $0c106dafb4e2ddcd$export$c8a14c10c33048c2)(cached.interval);
+        return info;
     }
     return {
         platform: options.platform,
         author: "Ohhu",
-        version: "1.0.3",
+        version: "1.0.4",
         srcUrl: options.srcUrl,
         cacheControl: "no-store",
         primaryKey: [ options.idParam ],
@@ -401,7 +451,8 @@ function $0711457daf45bbf8$var$createPointSongPlugin(options) {
         userVariables: $0711457daf45bbf8$var$USER_VARIABLES,
         search: search,
         getMediaSource: getMediaSource,
-        getLyric: getLyric
+        getLyric: getLyric,
+        getMusicInfo: getMusicInfo
     };
 }
 
@@ -411,7 +462,7 @@ function $0711457daf45bbf8$export$2ef6d92eb854799e() {
         endpoint: "/api/qq_music",
         idParam: "mid",
         searchLimitParam: "num",
-        srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.3/dist/ChKSzQQ.js"
+        srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.4/dist/ChKSzQQ.js"
     });
 }
 
@@ -420,7 +471,7 @@ function $0711457daf45bbf8$export$eaa44ae5e5e89012() {
         platform: "ChKSz·酷狗",
         endpoint: "/api/kugou_music",
         idParam: "id",
-        srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.3/dist/ChKSzKugou.js"
+        srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.4/dist/ChKSzKugou.js"
     });
 }
 

@@ -3,15 +3,33 @@
  *
  * 两个平台的接口形态一致：
  * - 搜索：GET /api/qq_music?msg=  /  GET /api/kugou_music?msg=
- * - 详情：带 n（序号）或 mid/id（直解）再请求一次，响应含 url/lrc/cover 等
+ * - 详情：带 n（序号）或 mid/id（直解）再请求一次，一次返回 url/cover/lrc/album 等全部字段
  * 仅支持 GET，无分页；size 使用音乐源原生值，不做别名映射。
+ *
+ * 详情按 mid/id 做内存缓存：App 播放成功后自动回调 getMusicInfo 回填封面等元数据、
+ * 缓存命中时 getLyric 直接复用歌词，均不额外消耗额度；
+ * 播放地址会过期且随音质变化，永远现请求、不从缓存复用。
  */
 
 import { chkszError, chkszGet } from "./client";
 import { ChKSzPluginDefine, ChKSzPluginSelf, ChKSzUserVariableDecl } from "./types";
-import { asRecord, deepFindHttpUrl, firstDefined, firstString, joinArtists, toDurationMs } from "./util";
+import { asRecord, deepFindHttpUrl, firstDefined, firstNumber, firstString, joinArtists, toDurationMs } from "./util";
 
 const POINT_SONG_SEARCH_LIMIT = 30;
+
+/** 详情缓存条数上限：插件在 App 内常驻，防内存无界增长；插件重载/应用重启后自然清空 */
+const DETAIL_CACHE_LIMIT = 100;
+
+/** 详情响应中可复用的元数据（缓存条目；url 仅留存参考，取流永远现请求） */
+interface PointSongDetail {
+  url?: string;
+  cover?: string;
+  lrc?: string;
+  album?: string;
+  title?: string;
+  artist?: string;
+  interval?: number;
+}
 
 /** MusicFree 音质 -> 音乐源原生 size（服务端不做别名/降级映射） */
 const SIZE_BY_QUALITY: Record<string, string> = {
@@ -61,6 +79,48 @@ function mapPointSongItem(options: PointSongBackendOptions, raw: Record<string, 
 }
 
 function createPointSongPlugin(options: PointSongBackendOptions): ChKSzPluginDefine {
+  // 详情缓存：详情响应一次带全 url/cover/lrc/album，按 mid/id 缓存后，
+  // getMusicInfo（App 播放成功后自动调用）与缓存命中的 getLyric 均零额外额度
+  const detailCache: Record<string, PointSongDetail> = {};
+  const detailCacheOrder: string[] = [];
+
+  function cacheKeyOf(record: Record<string, any>): string | null {
+    const key = firstString(
+      record[options.idParam],
+      options.idParam === "mid" ? record.songmid : undefined,
+      record.id
+    );
+    return key || null;
+  }
+
+  /** 提取详情元数据并写缓存；请求侧没带 key 时尝试用响应自带的 mid/id 回填 */
+  function rememberDetail(key: string | null, detail: Record<string, any>): PointSongDetail {
+    const detailData = asRecord(detail.data);
+    const info: PointSongDetail = {
+      url: firstString(detail.url, detailData ? detailData.url : undefined),
+      cover: firstString(detail.cover, detailData ? detailData.cover : undefined),
+      lrc: firstString(detail.lrc, detailData ? detailData.lrc : undefined),
+      album: firstString(detail.album, detailData ? detailData.album : undefined),
+      title: firstString(detail.name, detailData ? detailData.name : undefined),
+      artist: joinArtists(detail.singer, detailData ? detailData.singer : undefined),
+      interval: firstNumber(detail.interval, detailData ? detailData.interval : undefined),
+    };
+    const cacheKey = key || cacheKeyOf(detail);
+    if (cacheKey) {
+      if (!detailCache[cacheKey]) {
+        detailCacheOrder.push(cacheKey);
+        while (detailCacheOrder.length > DETAIL_CACHE_LIMIT) {
+          const oldest = detailCacheOrder.shift();
+          if (oldest && detailCache[oldest]) {
+            delete detailCache[oldest];
+          }
+        }
+      }
+      detailCache[cacheKey] = info;
+    }
+    return info;
+  }
+
   async function search(
     this: ChKSzPluginSelf,
     query: string,
@@ -135,10 +195,11 @@ function createPointSongPlugin(options: PointSongBackendOptions): ChKSzPluginDef
     quality: IMusic.IQualityKey
   ): Promise<IPlugin.IMediaSourceResult | null> {
     const size = SIZE_BY_QUALITY[quality] || "flac";
+    const record = asRecord(musicItem) || {};
     const detail = await fetchDetail(this, musicItem, size);
-
-    const detailData = asRecord(detail.data);
-    const url = firstString(detail.url, detailData ? detailData.url : undefined, deepFindHttpUrl(detail));
+    // 播放地址会过期且随音质变化，永远取新的；元数据顺带入缓存
+    const info = rememberDetail(cacheKeyOf(record), detail);
+    const url = firstString(info.url, deepFindHttpUrl(detail));
     if (!url) {
       throw chkszError("ChKSz 未返回播放地址：歌曲可能无版权或当前音质不可用，可尝试切换音质");
     }
@@ -149,16 +210,56 @@ function createPointSongPlugin(options: PointSongBackendOptions): ChKSzPluginDef
     this: ChKSzPluginSelf,
     musicItem: IMusic.IMusicItemPartial
   ): Promise<ILyric.ILyricSource | null> {
+    const record = asRecord(musicItem) || {};
+    const key = cacheKeyOf(record);
+    const cached = key ? detailCache[key] : undefined;
+    if (cached) {
+      // 详情已缓存（通常刚解析过播放地址），直接复用，不消耗额度
+      return cached.lrc ? { rawLrc: cached.lrc } : null;
+    }
     const detail = await fetchDetail(this, musicItem);
-    const detailData = asRecord(detail.data);
-    const lrc = firstString(detail.lrc, detailData ? detailData.lrc : undefined);
-    return lrc ? { lrc } : null;
+    const info = rememberDetail(key, detail);
+    // 注意：lrc 在 App 侧是 @deprecated 的“歌词 URL”字段，歌词文本必须走 rawLrc
+    return info.lrc ? { rawLrc: info.lrc } : null;
+  }
+
+  /**
+   * 仅读缓存：App 在播放成功后自动调用（getMediaSource 刚跑完，缓存必热），
+   * 用于回填封面/专辑/时长等元数据；冷缓存返回 null，不发请求、不耗额度。
+   */
+  async function getMusicInfo(
+    this: ChKSzPluginSelf,
+    musicBase: IMedia.IMediaBase
+  ): Promise<Partial<IMusic.IMusicItem> | null> {
+    const record = asRecord(musicBase) || {};
+    const key = cacheKeyOf(record);
+    const cached = key ? detailCache[key] : undefined;
+    if (!cached) {
+      return null;
+    }
+    const info: Partial<IMusic.IMusicItem> = {};
+    if (cached.title) {
+      info.title = cached.title;
+    }
+    if (cached.artist) {
+      info.artist = cached.artist;
+    }
+    if (cached.album) {
+      info.album = cached.album;
+    }
+    if (cached.cover) {
+      info.artwork = cached.cover;
+    }
+    if (cached.interval) {
+      info.duration = toDurationMs(cached.interval);
+    }
+    return info;
   }
 
   return {
     platform: options.platform,
     author: "Ohhu",
-    version: "1.0.3",
+    version: "1.0.4",
     srcUrl: options.srcUrl,
     cacheControl: "no-store",
     primaryKey: [options.idParam],
@@ -171,6 +272,7 @@ function createPointSongPlugin(options: PointSongBackendOptions): ChKSzPluginDef
     search: search as any,
     getMediaSource,
     getLyric,
+    getMusicInfo,
   };
 }
 
@@ -181,7 +283,7 @@ export function createQQPlugin(): ChKSzPluginDefine {
     endpoint: "/api/qq_music",
     idParam: "mid",
     searchLimitParam: "num",
-    srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.3/dist/ChKSzQQ.js",
+    srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.4/dist/ChKSzQQ.js",
   });
 }
 
@@ -191,6 +293,6 @@ export function createKugouPlugin(): ChKSzPluginDefine {
     platform: "ChKSz·酷狗",
     endpoint: "/api/kugou_music",
     idParam: "id",
-    srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.3/dist/ChKSzKugou.js",
+    srcUrl: "https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.4/dist/ChKSzKugou.js",
   });
 }

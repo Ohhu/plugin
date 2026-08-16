@@ -4,9 +4,9 @@
 
 | 插件文件 | 音源名 | 能力 |
 | --- | --- | --- |
-| `dist/ChKSzNetease.js` | `ChKSz·网易云` | 搜索、播放解析、歌词、歌单导入 |
-| `dist/ChKSzQQ.js` | `ChKSz·QQ音乐` | 搜索、播放解析、歌词 |
-| `dist/ChKSzKugou.js` | `ChKSz·酷狗` | 搜索、播放解析、歌词 |
+| `dist/ChKSzNetease.js` | `ChKSz·网易云` | 搜索、播放解析、歌词（原文+翻译）、歌单导入 |
+| `dist/ChKSzQQ.js` | `ChKSz·QQ音乐` | 搜索、播放解析、歌词、封面回填（播放后） |
+| `dist/ChKSzKugou.js` | `ChKSz·酷狗` | 搜索、播放解析、歌词、封面回填（播放后） |
 
 三个插件相互独立，可按需导入；同时启用后在 MusicFree「聚合搜索」中可一并命中。
 
@@ -29,12 +29,12 @@ https://cdn.jsdelivr.net/gh/Ohhu/plugin@ChKSz/dist/ChKSz.json
 
 **方式二：单个插件手动导入**
 
-MusicFree → 设置 → 插件管理 → 右上角菜单 → 从网络安装，按需粘贴（`chksz-v1.0.3` 为版本锁定地址，永不缓存过期）：
+MusicFree → 设置 → 插件管理 → 右上角菜单 → 从网络安装，按需粘贴（`chksz-v1.0.4` 为版本锁定地址，永不缓存过期）：
 
 ```text
-https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.3/dist/ChKSzNetease.js   # ChKSz·网易云
-https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.3/dist/ChKSzQQ.js        # ChKSz·QQ音乐
-https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.3/dist/ChKSzKugou.js     # ChKSz·酷狗
+https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.4/dist/ChKSzNetease.js   # ChKSz·网易云
+https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.4/dist/ChKSzQQ.js        # ChKSz·QQ音乐
+https://cdn.jsdelivr.net/gh/Ohhu/plugin@chksz-v1.0.4/dist/ChKSzKugou.js     # ChKSz·酷狗
 ```
 
 ### 3. 填写 API Key
@@ -64,12 +64,23 @@ MusicFree 的四档音质映射到 ChKSz 的服务端原生值（服务端不做
 https://music.163.com/#/playlist?id=3778678
 ```
 
+## 封面与歌词（QQ / 酷狗）
+
+ChKSz 点歌接口的**搜索结果不含封面**（列表项只有歌名/歌手/专辑/时长），封面、歌词、播放地址都在同一次「详情」响应里。插件据此做了详情缓存：
+
+- 播放时解析详情一次，封面/专辑/时长会由 App 自动回填到播放页与锁屏（`getMusicInfo`），**不额外消耗额度**；
+- 播放过的歌再打开歌词面板，直接复用缓存，**不额外消耗额度**；未播放过就单独看歌词，会计一次请求；
+- 播放地址会过期且随音质变化，永远现取，不走缓存；
+- 缓存为内存级（上限 100 首，先进先出），插件重载或 App 重启后清空；搜索列表在播放前始终没有封面，属接口限制而非缺陷。
+
+网易云的搜索/歌单响应自带专辑封面，无此问题；其歌词自 v1.0.4 起同时返回原文与翻译。
+
 ## 限额与错误行为
 
 - 默认速率限制：每个 Key 每分钟 20 次；免费额度每账户每日 50 次（北京时间次日凌晨重置），1 LDC 可兑换 10 次付费请求。
 - `429` 时若 `Retry-After` ≤ 10 秒，插件会等待后重试一次；否则直接提示稍后再试。
 - `401 / 402 / 403 / 503` 等错误会转述为可读的中文提示（检查 Key、等待额度重置、兑换 LDC、稍后重试等），不会无限重试。
-- 每次搜索、解析、歌词、歌单请求各消耗一次额度，请按需使用。
+- 每次搜索、解析、歌单请求各消耗一次额度，请按需使用；QQ / 酷狗的歌词与封面信息复用播放时的详情缓存（见上节），播放一首歌全程只扣 1 次。
 
 ## 开发
 
