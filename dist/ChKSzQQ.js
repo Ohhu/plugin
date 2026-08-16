@@ -394,7 +394,8 @@ function $eb463bb9be5279f7$var$createPointSongPlugin(options) {
         const data = await (0, $a6afe7b81da5ac04$export$ad90614321195e52)({
             path: options.endpoint,
             params: params,
-            self: self
+            self: self,
+            timeoutMs: (0, $a6afe7b81da5ac04$export$1ad3691e597a27ef)
         });
         return (0, $2fe70d8413f7612b$export$badcc9423dc3e1c1)(data) || {};
     }
@@ -439,7 +440,7 @@ function $eb463bb9be5279f7$var$createPointSongPlugin(options) {
     return {
         platform: options.platform,
         author: "Ohhu",
-        version: "1.0.4",
+        version: "1.0.5",
         srcUrl: options.srcUrl,
         cacheControl: "no-store",
         primaryKey: [ options.idParam ],
@@ -462,7 +463,7 @@ function $eb463bb9be5279f7$export$2ef6d92eb854799e() {
         endpoint: "/api/qq_music",
         idParam: "mid",
         searchLimitParam: "num",
-        srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.4/dist/ChKSzQQ.js"
+        srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.5/dist/ChKSzQQ.js"
     });
 }
 
@@ -471,7 +472,7 @@ function $eb463bb9be5279f7$export$eaa44ae5e5e89012() {
         platform: "ChKSz·酷狗",
         endpoint: "/api/kugou_music",
         idParam: "id",
-        srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.4/dist/ChKSzKugou.js"
+        srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.5/dist/ChKSzKugou.js"
     });
 }
 

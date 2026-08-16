@@ -361,7 +361,8 @@ async function $7f28772cb2d30742$var$getNeteaseMediaSource(musicItem, quality) {
             id: musicItem.id,
             level: level
         },
-        self: this
+        self: this,
+        timeoutMs: (0, $a6afe7b81da5ac04$export$1ad3691e597a27ef)
     });
     const root = (0, $2fe70d8413f7612b$export$badcc9423dc3e1c1)(data);
     const rootData = (0, $2fe70d8413f7612b$export$badcc9423dc3e1c1)(root ? root.data : undefined);
@@ -473,8 +474,8 @@ function $7f28772cb2d30742$export$db196fef1ba941f3() {
     return {
         platform: $7f28772cb2d30742$export$fb4417ed62a774fb,
         author: "Ohhu",
-        version: "1.0.4",
-        srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.4/dist/ChKSzNetease.js",
+        version: "1.0.5",
+        srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.5/dist/ChKSzNetease.js",
         cacheControl: "no-store",
         primaryKey: [ "id" ],
         supportedSearchType: [ "music" ],

@@ -107,10 +107,12 @@ async function getNeteaseMediaSource(
   quality: IMusic.IQualityKey
 ): Promise<IPlugin.IMediaSourceResult | null> {
   const level = NETEASE_QUALITY_LEVEL[quality] || "jymaster";
+  // 无损/母带解析在服务端可能较慢：超时过短会导致 App 端静默降档音质
   const data = await chkszGet({
     path: "/api/163_music",
     params: { id: musicItem.id, level },
     self: this,
+    timeoutMs: CHKSZ_LARGE_TIMEOUT_MS,
   });
 
   const root = asRecord(data);
@@ -273,8 +275,8 @@ export function createNeteasePlugin(): ChKSzPluginDefine {
   return {
     platform: NETEASE_PLATFORM,
     author: "Ohhu",
-    version: "1.0.4",
-    srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.4/dist/ChKSzNetease.js",
+    version: "1.0.5",
+    srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.5/dist/ChKSzNetease.js",
     cacheControl: "no-store",
     primaryKey: ["id"],
     supportedSearchType: ["music"],

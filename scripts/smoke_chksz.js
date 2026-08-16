@@ -135,6 +135,7 @@ async function main() {
     const result = await netease.getMediaSource.call(self, { id: 42 }, "high");
     assert.strictEqual(result.url, "https://cdn.example.com/a.flac");
     assert.strictEqual(result.quality, "high");
+    assert.strictEqual(calls[calls.length - 1].config.timeout, 25000);
     const query = queryOf(lastUrl());
     assert.strictEqual(query.id, "42");
     assert.strictEqual(query.level, "lossless");
@@ -246,6 +247,8 @@ async function main() {
     const item = { id: "m1", mid: "m1", title: "QA", artist: "SA", keyword: "kw" };
     const result = await qq.getMediaSource.call(self, item, "super");
     assert.strictEqual(result.url, "https://qq.example.com/a.flac");
+    // 解析类请求使用大超时，避免无损/母带解析慢被 App 静默降档
+    assert.strictEqual(calls[calls.length - 1].config.timeout, 25000);
     const query = queryOf(lastUrl());
     assert.strictEqual(query.mid, "m1");
     assert.strictEqual(query.msg, "kw");

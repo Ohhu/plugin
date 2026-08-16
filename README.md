@@ -29,12 +29,12 @@ https://raw.githubusercontent.com/Ohhu/plugin/ChKSz/dist/ChKSz.json
 
 **方式二：单个插件手动导入**
 
-MusicFree → 设置 → 插件管理 → 右上角菜单 → 从网络安装，按需粘贴（`chksz-v1.0.4` 为 git tag 锁定地址，内容不可变；直连 GitHub 原始文件，不经过 CDN）：
+MusicFree → 设置 → 插件管理 → 右上角菜单 → 从网络安装，按需粘贴（`chksz-v1.0.5` 为 git tag 锁定地址，内容不可变；直连 GitHub 原始文件，不经过 CDN）：
 
 ```text
-https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.4/dist/ChKSzNetease.js   # ChKSz·网易云
-https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.4/dist/ChKSzQQ.js        # ChKSz·QQ音乐
-https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.4/dist/ChKSzKugou.js     # ChKSz·酷狗
+https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.5/dist/ChKSzNetease.js   # ChKSz·网易云
+https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.5/dist/ChKSzQQ.js        # ChKSz·QQ音乐
+https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.5/dist/ChKSzKugou.js     # ChKSz·酷狗
 ```
 
 ### 3. 填写 API Key
@@ -74,6 +74,10 @@ ChKSz 点歌接口的**搜索结果不含封面**（列表项只有歌名/歌手
 - 缓存为内存级（上限 100 首，先进先出），插件重载或 App 重启后清空；搜索列表在播放前始终没有封面，属接口限制而非缺陷。
 
 网易云的搜索/歌单响应自带专辑封面，无此问题；其歌词自 v1.0.4 起同时返回原文与翻译。
+
+## 播放音质与自动降档
+
+MusicFree 播放时会从「默认音质」开始逐档尝试：插件解析失败（无版权、VIP 限制、解析超时等）会**静默降档**到下一档，所以实际播放音质可能低于设置值；在播放页手动切换音质则会直接请求对应档位。插件侧已把解析超时放宽到 25 秒（无损/母带在服务端解析较慢，超时过短是首播被降档的常见原因）。若某首歌确实无高音质版权，降档是预期行为。
 
 ## 限额与错误行为
 

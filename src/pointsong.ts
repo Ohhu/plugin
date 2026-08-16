@@ -11,7 +11,7 @@
  * 播放地址会过期且随音质变化，永远现请求、不从缓存复用。
  */
 
-import { chkszError, chkszGet } from "./client";
+import { CHKSZ_LARGE_TIMEOUT_MS, chkszError, chkszGet } from "./client";
 import { ChKSzPluginDefine, ChKSzPluginSelf, ChKSzUserVariableDecl } from "./types";
 import { asRecord, deepFindHttpUrl, firstDefined, firstNumber, firstString, joinArtists, toDurationMs } from "./util";
 
@@ -185,7 +185,8 @@ function createPointSongPlugin(options: PointSongBackendOptions): ChKSzPluginDef
       throw chkszError("缺少歌曲标识（mid/id）与关键词，无法解析歌曲");
     }
 
-    const data = await chkszGet({ path: options.endpoint, params, self });
+    // 无损/母带解析在服务端可能较慢：超时过短会导致 App 端静默降档音质
+    const data = await chkszGet({ path: options.endpoint, params, self, timeoutMs: CHKSZ_LARGE_TIMEOUT_MS });
     return asRecord(data) || {};
   }
 
@@ -259,7 +260,7 @@ function createPointSongPlugin(options: PointSongBackendOptions): ChKSzPluginDef
   return {
     platform: options.platform,
     author: "Ohhu",
-    version: "1.0.4",
+    version: "1.0.5",
     srcUrl: options.srcUrl,
     cacheControl: "no-store",
     primaryKey: [options.idParam],
@@ -283,7 +284,7 @@ export function createQQPlugin(): ChKSzPluginDefine {
     endpoint: "/api/qq_music",
     idParam: "mid",
     searchLimitParam: "num",
-    srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.4/dist/ChKSzQQ.js",
+    srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.5/dist/ChKSzQQ.js",
   });
 }
 
@@ -293,6 +294,6 @@ export function createKugouPlugin(): ChKSzPluginDefine {
     platform: "ChKSz·酷狗",
     endpoint: "/api/kugou_music",
     idParam: "id",
-    srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.4/dist/ChKSzKugou.js",
+    srcUrl: "https://raw.githubusercontent.com/Ohhu/plugin/chksz-v1.0.5/dist/ChKSzKugou.js",
   });
 }
